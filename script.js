@@ -590,11 +590,11 @@
         position: fixed;
         bottom: 20px;
         right: 20px;
-        width: 320px; /* REDUZIDO: era 380px, agora 320px */
+        width: 228px; /* 60% de 380px = 228px */
         background: ${colors.surface};
         color: ${colors.text};
-        padding: 12px; /* REDUZIDO: era 16px */
-        border-radius: 12px; /* REDUZIDO: era 16px */
+        padding: 9.6px; /* 60% de 16px = 9.6px */
+        border-radius: 9.6px; /* 60% de 16px = 9.6px */
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         z-index: 999999;
@@ -622,25 +622,25 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px; /* REDUZIDO: era 12px */
-        margin-bottom: 12px; /* REDUZIDO: era 16px */
-        padding-bottom: 8px; /* REDUZIDO: era 12px */
+        gap: 7.2px; /* 60% de 12px = 7.2px */
+        margin-bottom: 9.6px; /* 60% de 16px = 9.6px */
+        padding-bottom: 7.2px; /* 60% de 12px = 7.2px */
         border-bottom: 1px solid ${colors.border};
       `;
       
       const titleEl = document.createElement('div');
       titleEl.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px;"> <!-- REDUZIDO: era 10px -->
-          <div style="font-size: 18px;">🌀</div> <!-- REDUZIDO: era 20px -->
+        <div style="display: flex; align-items: center; gap: 6px;"> <!-- 60% de 10px = 6px -->
+          <div style="font-size: 12px;">🌀</div> <!-- 60% de 20px = 12px -->
           <div>
-            <div style="font-weight: 700; font-size: 14px; color: ${colors.textImportant};">Type Flow</div> <!-- REDUZIDO: era 16px -->
-            <div style="font-size: 10px; color: ${colors.textLight}; margin-top: 1px;">Ferramenta de Redação</div> <!-- REDUZIDO: era 11px -->
+            <div style="font-weight: 700; font-size: 9.6px; color: ${colors.textImportant};">Type Flow</div> <!-- 60% de 16px = 9.6px -->
+            <div style="font-size: 6.6px; color: ${colors.textLight}; margin-top: 1.2px;">Ferramenta de Redação</div> <!-- 60% de 11px = 6.6px -->
           </div>
         </div>
       `;
       
       const controlsContainer = document.createElement('div');
-      controlsContainer.style.cssText = `display: flex; gap: 4px;`; /* REDUZIDO: era 6px */
+      controlsContainer.style.cssText = `display: flex; gap: 3.6px;`; /* 60% de 6px = 3.6px */
       
       window.darkModeBtn = document.createElement('button');
       window.darkModeBtn.innerHTML = currentMode === 'dark' ? '☀️' : '🌙';
@@ -649,11 +649,11 @@
         background: rgba(255,255,255,0.1);
         border: none;
         color: ${colors.text};
-        font-size: 14px; /* REDUZIDO: era 16px */
+        font-size: 9.6px; /* 60% de 16px = 9.6px */
         cursor: pointer;
-        width: 32px; /* REDUZIDO: era 36px */
-        height: 32px; /* REDUZIDO: era 36px */
-        border-radius: 8px; /* REDUZIDO: era 10px */
+        width: 21.6px; /* 60% de 36px = 21.6px */
+        height: 21.6px; /* 60% de 36px = 21.6px */
+        border-radius: 6px; /* 60% de 10px = 6px */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -668,11 +668,11 @@
         background: rgba(255,255,255,0.1);
         border: none;
         color: ${colors.text};
-        font-size: 16px; /* REDUZIDO: era 18px */
+        font-size: 10.8px; /* 60% de 18px = 10.8px */
         cursor: pointer;
-        width: 32px; /* REDUZIDO: era 36px */
-        height: 32px; /* REDUZIDO: era 36px */
-        border-radius: 8px; /* REDUZIDO: era 10px */
+        width: 21.6px; /* 60% de 36px = 21.6px */
+        height: 21.6px; /* 60% de 36px = 21.6px */
+        border-radius: 6px; /* 60% de 10px = 6px */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -705,7 +705,7 @@
     createBody(popup, colors) {
       const body = document.createElement('div');
       body.className = 'tf-body';
-      body.style.cssText = `margin-top: 6px;`; /* REDUZIDO: era 8px */
+      body.style.cssText = `margin-top: 4.8px;`; /* 60% de 8px = 4.8px */
 
       this.createTopButtons(body, colors);
       this.createFormFields(body, colors);
@@ -718,24 +718,24 @@
 
     createTopButtons(body, colors) {
       const topButtons = document.createElement('div');
-      topButtons.style.cssText = 'display: flex; gap: 6px; margin-bottom: 12px;'; /* REDUZIDO: gap era 8px, margin 16px */
+      topButtons.style.cssText = 'display: flex; gap: 4.8px; margin-bottom: 9.6px;'; /* 60% de 8px = 4.8px, 60% de 16px = 9.6px */
       
       const infoBtn = document.createElement('button');
       infoBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 4px;"> <!-- REDUZIDO: era 6px -->
+        <div style="display: flex; align-items: center; gap: 3.6px;"> <!-- 60% de 6px = 3.6px -->
           <span>📋</span>
-          <span style="font-size: 11px;">Capturar Info</span> <!-- REDUZIDO: era 12px -->
+          <span style="font-size: 7.2px;">Capturar Info</span> <!-- 60% de 12px = 7.2px -->
         </div>
       `;
       infoBtn.style.cssText = `
         flex: 1;
-        padding: 10px; /* REDUZIDO: era 12px */
-        border-radius: 10px; /* REDUZIDO: era 12px */
+        padding: 7.2px; /* 60% de 12px = 7.2px */
+        border-radius: 7.2px; /* 60% de 12px = 7.2px */
         border: 1px solid ${colors.border};
         background: ${colors.card};
         color: ${colors.text};
         cursor: pointer;
-        font-size: 11px; /* REDUZIDO: era 12px */
+        font-size: 7.2px; /* 60% de 12px = 7.2px */
         font-weight: 500;
         transition: all 0.2s ease;
         backdrop-filter: blur(10px);
@@ -743,21 +743,21 @@
 
       const copyPromptBtn = document.createElement('button');
       copyPromptBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 4px;"> <!-- REDUZIDO: era 6px -->
+        <div style="display: flex; align-items: center; gap: 3.6px;"> <!-- 60% de 6px = 3.6px -->
           <span>🤖</span>
-          <span style="font-size: 11px;">Prompt IA</span> <!-- REDUZIDO: era 12px -->
+          <span style="font-size: 7.2px;">Prompt IA</span> <!-- 60% de 12px = 7.2px -->
         </div>
       `;
       copyPromptBtn.title = 'Gerar prompt para inteligência artificial';
       copyPromptBtn.style.cssText = `
         flex: 1;
-        padding: 10px; /* REDUZIDO: era 12px */
-        border-radius: 10px; /* REDUZIDO: era 12px */
+        padding: 7.2px; /* 60% de 12px = 7.2px */
+        border-radius: 7.2px; /* 60% de 12px = 7.2px */
         border: none;
         background: ${colors.gradient};
         color: white;
         cursor: pointer;
-        font-size: 11px; /* REDUZIDO: era 12px */
+        font-size: 7.2px; /* 60% de 12px = 7.2px */
         font-weight: 600;
         transition: all 0.2s ease;
       `;
@@ -788,8 +788,8 @@
       titleLabel.innerText = 'Título da Redação';
       titleLabel.style.cssText = `
         display: block;
-        font-size: 11px; /* REDUZIDO: era 12px */
-        margin-bottom: 4px; /* REDUZIDO: era 6px */
+        font-size: 7.2px; /* 60% de 12px = 7.2px */
+        margin-bottom: 3.6px; /* 60% de 6px = 3.6px */
         color: ${colors.textLight};
         font-weight: 500;
       `;
@@ -799,14 +799,14 @@
       titleInput.placeholder = 'Digite o título da sua redação...';
       titleInput.style.cssText = `
         width: 100%;
-        padding: 10px; /* REDUZIDO: era 12px */
-        border-radius: 10px; /* REDUZIDO: era 12px */
+        padding: 7.2px; /* 60% de 12px = 7.2px */
+        border-radius: 7.2px; /* 60% de 12px = 7.2px */
         border: 1px solid ${colors.border};
         background: ${colors.card};
         color: ${colors.text};
         outline: none;
-        margin-bottom: 12px; /* REDUZIDO: era 16px */
-        font-size: 12px; /* REDUZIDO: era 13px */
+        margin-bottom: 9.6px; /* 60% de 16px = 9.6px */
+        font-size: 7.8px; /* 60% de 13px = 7.8px */
         transition: all 0.2s ease;
       `;
       titleInput.addEventListener('focus', function() {
@@ -822,28 +822,28 @@
       textLabel.innerText = 'Texto da Redação';
       textLabel.style.cssText = `
         display: block;
-        font-size: 11px; /* REDUZIDO: era 12px */
-        margin: 4px 0; /* REDUZIDO: era 6px 0 */
+        font-size: 7.2px; /* 60% de 12px = 7.2px */
+        margin: 3.6px 0; /* 60% de 6px = 3.6px */
         color: ${colors.textLight};
         font-weight: 500;
       `;
       
       window.popupTextarea = document.createElement('textarea');
-      window.popupTextarea.rows = 5; /* REDUZIDO: era 6 */
+      window.popupTextarea.rows = 4; /* 60% de 6 = 3.6, arredondado para 4 */
       window.popupTextarea.placeholder = 'Digite o texto da sua redação aqui...';
       window.popupTextarea.style.cssText = `
         width: 100%;
-        padding: 10px; /* REDUZIDO: era 12px */
-        border-radius: 10px; /* REDUZIDO: era 12px */
+        padding: 7.2px; /* 60% de 12px = 7.2px */
+        border-radius: 7.2px; /* 60% de 12px = 7.2px */
         border: 1px solid ${colors.border};
         background: ${colors.card};
         color: ${colors.text};
         outline: none;
         resize: vertical;
-        font-size: 12px; /* REDUZIDO: era 13px */
+        font-size: 7.8px; /* 60% de 13px = 7.8px */
         font-family: 'Inter', system-ui, sans-serif;
         transition: all 0.2s ease;
-        min-height: 120px; /* ADICIONADO para manter proporção */
+        min-height: 72px; /* 60% de 120px = 72px */
       `;
       window.popupTextarea.addEventListener('focus', function() {
         this.style.borderColor = colors.primary;
@@ -865,27 +865,27 @@
 
     createBottomRow(body, colors) {
       const bottomRow = document.createElement('div');
-      bottomRow.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-top: 12px;'; /* REDUZIDO: gap era 12px, margin 16px */
+      bottomRow.style.cssText = 'display: flex; gap: 7.2px; align-items: center; margin-top: 9.6px;'; /* 60% de 12px = 7.2px, 60% de 16px = 9.6px */
 
       window.wordCounter = document.createElement('div');
       WordCounter.updateWordCounter();
 
       const sendBtn = document.createElement('button');
       sendBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 4px;"> <!-- REDUZIDO: era 6px -->
+        <div style="display: flex; align-items: center; gap: 3.6px;"> <!-- 60% de 6px = 3.6px -->
           <span>🚀</span>
-          <span style="font-size: 11px;">Enviar Texto</span> <!-- REDUZIDO: era 13px -->
+          <span style="font-size: 7.8px;">Enviar Texto</span> <!-- 60% de 13px = 7.8px -->
         </div>
       `;
       sendBtn.style.cssText = `
         background: ${colors.success};
         color: white;
         border: none;
-        padding: 10px 16px; /* REDUZIDO: era 12px 20px */
-        border-radius: 10px; /* REDUZIDO: era 12px */
+        padding: 7.2px 12px; /* 60% de 12px 20px = 7.2px 12px */
+        border-radius: 7.2px; /* 60% de 12px = 7.2px */
         cursor: pointer;
         font-weight: 600;
-        font-size: 11px; /* REDUZIDO: era 13px */
+        font-size: 7.8px; /* 60% de 13px = 7.8px */
         transition: all 0.2s ease;
         flex-shrink: 0;
       `;
@@ -910,10 +910,10 @@
       const progressWrap = document.createElement('div');
       progressWrap.style.cssText = `
         width: 100%;
-        height: 4px; /* REDUZIDO: era 6px */
+        height: 3.6px; /* 60% de 6px = 3.6px */
         background: ${colors.border};
-        border-radius: 8px; /* REDUZIDO: era 10px */
-        margin-top: 12px; /* REDUZIDO: era 16px */
+        border-radius: 6px; /* 60% de 10px = 6px */
+        margin-top: 9.6px; /* 60% de 16px = 9.6px */
         overflow: hidden;
       `;
       
@@ -923,7 +923,7 @@
         height: 100%;
         background: ${colors.gradient};
         transition: width 0.3s ease;
-        border-radius: 8px; /* REDUZIDO: era 10px */
+        border-radius: 6px; /* 60% de 10px = 6px */
       `;
       progressWrap.appendChild(window.progressBar);
       body.appendChild(progressWrap);
@@ -937,8 +937,8 @@
         
         if (!state.popupVisible) {
           this.body.style.display = 'none';
-          this.popup.style.width = '150px'; /* REDUZIDO: era 200px */
-          this.popup.style.padding = '8px'; /* REDUZIDO para caber melhor */
+          this.popup.style.width = '90px'; /* 60% de 150px = 90px */
+          this.popup.style.padding = '4.8px'; /* 60% de 8px = 4.8px */
           this.btnToggle.innerText = '+';
           this.btnToggle.title = 'Restaurar';
           
@@ -946,12 +946,12 @@
           const header = this.popup.querySelector('.tf-header');
           if (header) {
             header.style.justifyContent = 'center';
-            header.style.gap = '8px';
+            header.style.gap = '4.8px'; /* 60% de 8px = 4.8px */
           }
         } else {
           this.body.style.display = '';
-          this.popup.style.width = '320px'; /* REDUZIDO: era 380px */
-          this.popup.style.padding = '12px'; /* RESTAURADO */
+          this.popup.style.width = '228px'; /* 60% de 380px = 228px */
+          this.popup.style.padding = '9.6px'; /* RESTAURADO */
           this.btnToggle.innerText = '–';
           this.btnToggle.title = 'Minimizar';
           
@@ -959,7 +959,7 @@
           const header = this.popup.querySelector('.tf-header');
           if (header) {
             header.style.justifyContent = 'space-between';
-            header.style.gap = '8px';
+            header.style.gap = '7.2px'; /* 60% de 12px = 7.2px */
           }
         }
       });
@@ -1068,7 +1068,7 @@
           this.popup.style.right = '20px';
           this.popup.style.bottom = '20px';
         } else {
-          this.popup.style.width = '320px'; /* REDUZIDO: era 380px */
+          this.popup.style.width = '228px'; /* 60% de 380px = 228px */
           this.popup.style.right = '20px';
           this.popup.style.left = 'auto';
         }
@@ -1136,7 +1136,7 @@
       attributeFilter: ['data-toolpad-color-scheme']
     });
 
-    console.log('🚀 Type Flow carregado com sucesso! (Versão Compacta)');
+    console.log('🚀 Type Flow carregado com sucesso! (Versão 60% Compacta)');
   }
 
   // Inicializar a aplicação
