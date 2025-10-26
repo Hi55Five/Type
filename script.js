@@ -1,7 +1,7 @@
 (function() {
   // ========== CONFIGURAÇÕES GLOBAIS ==========
   const CONFIG = {
-    typingDelay: 35,
+    typingDelay: 10,
     darkModeColors: {
       background: '#0f0f23',
       surface: '#1a1a2e',
