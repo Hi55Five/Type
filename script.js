@@ -33,6 +33,83 @@
   // ========== VERIFICAÇÃO DE DUPLICIDADE ==========
   if (document.getElementById('typeflow-popup')) return;
 
+  // ========== DETECÇÃO DE DISPOSITIVO ==========
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const popupSize = isMobile ? 0.6 : 0.85; // 60% mobile, 85% PC
+
+  // ========== SISTEMA DE FPS ==========
+  const FPSTracker = {
+    fps: 0,
+    frameCount: 0,
+    lastTime: performance.now(),
+    fpsElement: null,
+
+    init() {
+      this.createFPSDisplay();
+      this.startTracking();
+    },
+
+    createFPSDisplay() {
+      this.fpsElement = document.createElement('div');
+      this.fpsElement.id = 'typeflow-fps';
+      this.fpsElement.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #00ff00;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        z-index: 999998;
+        backdrop-filter: blur(10px);
+        border: 1px solid #00ff00;
+        transition: all 0.3s ease;
+        opacity: 0.9;
+      `;
+      document.body.appendChild(this.fpsElement);
+      this.updateDisplay();
+    },
+
+    startTracking() {
+      const updateFPS = () => {
+        this.frameCount++;
+        const currentTime = performance.now();
+        
+        if (currentTime - this.lastTime >= 1000) {
+          this.fps = Math.round((this.frameCount * 1000) / (currentTime - this.lastTime));
+          this.frameCount = 0;
+          this.lastTime = currentTime;
+          this.updateDisplay();
+        }
+        
+        requestAnimationFrame(updateFPS);
+      };
+      
+      requestAnimationFrame(updateFPS);
+    },
+
+    updateDisplay() {
+      if (this.fpsElement) {
+        const ms = Math.round(1000 / Math.max(this.fps, 1));
+        this.fpsElement.innerHTML = `
+          <div style="line-height: 1.4;">
+            <div>FPS: ${this.fps}</div>
+            <div>MS: ${ms}ms</div>
+            <div style="font-size: 10px; opacity: 0.8;">@_zx.lipe_</div>
+          </div>
+        `;
+      }
+    },
+
+    toggleVisibility(show) {
+      if (this.fpsElement) {
+        this.fpsElement.style.display = show ? 'block' : 'none';
+      }
+    }
+  };
+
   // ========== GESTÃO DE ESTADO ==========
   const StateManager = {
     state: {
@@ -43,7 +120,8 @@
       wordGoal: 200,
       popupVisible: true,
       isTyping: false,
-      typingQueue: []
+      typingQueue: [],
+      isMinimized: false
     },
     
     setState(newState) {
@@ -60,7 +138,6 @@
       this.observers.forEach(callback => callback(this.state));
     },
 
-    // Helper para acessar o estado atual
     getState() {
       return this.state;
     }
@@ -68,7 +145,6 @@
 
   // ========== SISTEMA DE UTILITÁRIOS ==========
   const Utils = {
-    // Debounce para eventos frequentes
     debounce(func, wait) {
       let timeout;
       return function executedFunction(...args) {
@@ -81,7 +157,6 @@
       };
     },
 
-    // Error handling wrapper
     async safeExecute(operation, errorMessage) {
       try {
         return await operation();
@@ -92,7 +167,6 @@
       }
     },
 
-    // Throttle para eventos de drag
     throttle(func, limit) {
       let inThrottle;
       return function(...args) {
@@ -102,6 +176,11 @@
           setTimeout(() => inThrottle = false, limit);
         }
       };
+    },
+
+    // Função para calcular tamanhos baseado no dispositivo
+    getSize(baseSize) {
+      return baseSize * popupSize;
     }
   };
 
@@ -317,7 +396,6 @@
           const valor = valorElement.textContent.trim();
           informacoes[label] = valor;
           
-          // Extrair número de palavras se disponível
           if (label.includes('palavras') || label.includes('número')) {
             const match = valor.match(/(\d+)/);
             if (match) {
@@ -500,7 +578,6 @@
       document.addEventListener('mousemove', Utils.throttle(this.drag.bind(this), 16));
       document.addEventListener('mouseup', this.stopDrag.bind(this));
       
-      // Touch events para mobile
       header.addEventListener('touchstart', this.startDrag.bind(this));
       document.addEventListener('touchmove', Utils.throttle(this.drag.bind(this), 16));
       document.addEventListener('touchend', this.stopDrag.bind(this));
@@ -584,17 +661,26 @@
       const state = StateManager.getState();
       const colors = state.currentMode === 'dark' ? CONFIG.darkModeColors : CONFIG.lightModeColors;
 
+      // Tamanhos base fixos para evitar problemas no minimizar
+      const baseWidth = 380;
+      const basePadding = 16;
+      const baseBorderRadius = 16;
+
+      const currentWidth = Utils.getSize(baseWidth);
+      const currentPadding = Utils.getSize(basePadding);
+      const currentBorderRadius = Utils.getSize(baseBorderRadius);
+
       const popup = document.createElement('div');
       popup.id = 'typeflow-popup';
       popup.style.cssText = `
         position: fixed;
         bottom: 20px;
         right: 20px;
-        width: 228px; /* 60% de 380px = 228px */
+        width: ${currentWidth}px;
         background: ${colors.surface};
         color: ${colors.text};
-        padding: 9.6px; /* 60% de 16px = 9.6px */
-        border-radius: 9.6px; /* 60% de 16px = 9.6px */
+        padding: ${currentPadding}px;
+        border-radius: ${currentBorderRadius}px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         z-index: 999999;
@@ -605,42 +691,45 @@
         overflow-y: auto;
       `;
 
-      this.createHeader(popup, colors, state.currentMode);
+      this.createHeader(popup, colors, state.currentMode, currentPadding);
       this.createBody(popup, colors);
       
       document.body.appendChild(popup);
       this.popup = popup;
 
-      // Inicializar sistema de drag
+      // Guardar dimensões originais
+      this.originalWidth = currentWidth;
+      this.originalPadding = currentPadding;
+
       new DragManager(popup);
     },
 
-    createHeader(popup, colors, currentMode) {
+    createHeader(popup, colors, currentMode, currentPadding) {
       const header = document.createElement('div');
       header.className = 'tf-header';
       header.style.cssText = `
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 7.2px; /* 60% de 12px = 7.2px */
-        margin-bottom: 9.6px; /* 60% de 16px = 9.6px */
-        padding-bottom: 7.2px; /* 60% de 12px = 7.2px */
+        gap: ${Utils.getSize(12)}px;
+        margin-bottom: ${Utils.getSize(16)}px;
+        padding-bottom: ${Utils.getSize(12)}px;
         border-bottom: 1px solid ${colors.border};
       `;
       
       const titleEl = document.createElement('div');
       titleEl.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 6px;"> <!-- 60% de 10px = 6px -->
-          <div style="font-size: 12px;">🌀</div> <!-- 60% de 20px = 12px -->
+        <div style="display: flex; align-items: center; gap: ${Utils.getSize(10)}px;">
+          <div style="font-size: ${Utils.getSize(20)}px;">🌀</div>
           <div>
-            <div style="font-weight: 700; font-size: 9.6px; color: ${colors.textImportant};">Type Flow</div> <!-- 60% de 16px = 9.6px -->
-            <div style="font-size: 6.6px; color: ${colors.textLight}; margin-top: 1.2px;">Ferramenta de Redação</div> <!-- 60% de 11px = 6.6px -->
+            <div style="font-weight: 700; font-size: ${Utils.getSize(16)}px; color: ${colors.textImportant};">Type Flow</div>
+            <div style="font-size: ${Utils.getSize(11)}px; color: ${colors.textLight}; margin-top: ${Utils.getSize(2)}px;">Ferramenta de Redação</div>
           </div>
         </div>
       `;
       
       const controlsContainer = document.createElement('div');
-      controlsContainer.style.cssText = `display: flex; gap: 3.6px;`; /* 60% de 6px = 3.6px */
+      controlsContainer.style.cssText = `display: flex; gap: ${Utils.getSize(6)}px;`;
       
       window.darkModeBtn = document.createElement('button');
       window.darkModeBtn.innerHTML = currentMode === 'dark' ? '☀️' : '🌙';
@@ -649,11 +738,11 @@
         background: rgba(255,255,255,0.1);
         border: none;
         color: ${colors.text};
-        font-size: 9.6px; /* 60% de 16px = 9.6px */
+        font-size: ${Utils.getSize(16)}px;
         cursor: pointer;
-        width: 21.6px; /* 60% de 36px = 21.6px */
-        height: 21.6px; /* 60% de 36px = 21.6px */
-        border-radius: 6px; /* 60% de 10px = 6px */
+        width: ${Utils.getSize(36)}px;
+        height: ${Utils.getSize(36)}px;
+        border-radius: ${Utils.getSize(10)}px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -668,11 +757,11 @@
         background: rgba(255,255,255,0.1);
         border: none;
         color: ${colors.text};
-        font-size: 10.8px; /* 60% de 18px = 10.8px */
+        font-size: ${Utils.getSize(18)}px;
         cursor: pointer;
-        width: 21.6px; /* 60% de 36px = 21.6px */
-        height: 21.6px; /* 60% de 36px = 21.6px */
-        border-radius: 6px; /* 60% de 10px = 6px */
+        width: ${Utils.getSize(36)}px;
+        height: ${Utils.getSize(36)}px;
+        border-radius: ${Utils.getSize(10)}px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -680,7 +769,6 @@
         backdrop-filter: blur(10px);
       `;
       
-      // Efeitos hover
       [window.darkModeBtn, btnToggle].forEach(btn => {
         btn.addEventListener('mouseenter', function() {
           this.style.background = 'rgba(255,255,255,0.2)';
@@ -698,14 +786,13 @@
       header.appendChild(controlsContainer);
       popup.appendChild(header);
 
-      // Store references
       this.btnToggle = btnToggle;
     },
 
     createBody(popup, colors) {
       const body = document.createElement('div');
       body.className = 'tf-body';
-      body.style.cssText = `margin-top: 4.8px;`; /* 60% de 8px = 4.8px */
+      body.style.cssText = `margin-top: ${Utils.getSize(8)}px;`;
 
       this.createTopButtons(body, colors);
       this.createFormFields(body, colors);
@@ -718,24 +805,24 @@
 
     createTopButtons(body, colors) {
       const topButtons = document.createElement('div');
-      topButtons.style.cssText = 'display: flex; gap: 4.8px; margin-bottom: 9.6px;'; /* 60% de 8px = 4.8px, 60% de 16px = 9.6px */
+      topButtons.style.cssText = `display: flex; gap: ${Utils.getSize(8)}px; margin-bottom: ${Utils.getSize(16)}px;`;
       
       const infoBtn = document.createElement('button');
       infoBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 3.6px;"> <!-- 60% de 6px = 3.6px -->
+        <div style="display: flex; align-items: center; gap: ${Utils.getSize(6)}px;">
           <span>📋</span>
-          <span style="font-size: 7.2px;">Capturar Info</span> <!-- 60% de 12px = 7.2px -->
+          <span style="font-size: ${Utils.getSize(12)}px;">Capturar Info</span>
         </div>
       `;
       infoBtn.style.cssText = `
         flex: 1;
-        padding: 7.2px; /* 60% de 12px = 7.2px */
-        border-radius: 7.2px; /* 60% de 12px = 7.2px */
+        padding: ${Utils.getSize(12)}px;
+        border-radius: ${Utils.getSize(12)}px;
         border: 1px solid ${colors.border};
         background: ${colors.card};
         color: ${colors.text};
         cursor: pointer;
-        font-size: 7.2px; /* 60% de 12px = 7.2px */
+        font-size: ${Utils.getSize(12)}px;
         font-weight: 500;
         transition: all 0.2s ease;
         backdrop-filter: blur(10px);
@@ -743,26 +830,25 @@
 
       const copyPromptBtn = document.createElement('button');
       copyPromptBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 3.6px;"> <!-- 60% de 6px = 3.6px -->
+        <div style="display: flex; align-items: center; gap: ${Utils.getSize(6)}px;">
           <span>🤖</span>
-          <span style="font-size: 7.2px;">Prompt IA</span> <!-- 60% de 12px = 7.2px -->
+          <span style="font-size: ${Utils.getSize(12)}px;">Prompt IA</span>
         </div>
       `;
       copyPromptBtn.title = 'Gerar prompt para inteligência artificial';
       copyPromptBtn.style.cssText = `
         flex: 1;
-        padding: 7.2px; /* 60% de 12px = 7.2px */
-        border-radius: 7.2px; /* 60% de 12px = 7.2px */
+        padding: ${Utils.getSize(12)}px;
+        border-radius: ${Utils.getSize(12)}px;
         border: none;
         background: ${colors.gradient};
         color: white;
         cursor: pointer;
-        font-size: 7.2px; /* 60% de 12px = 7.2px */
+        font-size: ${Utils.getSize(12)}px;
         font-weight: 600;
         transition: all 0.2s ease;
       `;
 
-      // Efeitos hover para botões
       [infoBtn, copyPromptBtn].forEach(btn => {
         btn.addEventListener('mouseenter', function() {
           this.style.transform = 'translateY(-2px)';
@@ -778,7 +864,6 @@
       topButtons.appendChild(copyPromptBtn);
       body.appendChild(topButtons);
 
-      // Store references
       this.infoBtn = infoBtn;
       this.copyPromptBtn = copyPromptBtn;
     },
@@ -788,8 +873,8 @@
       titleLabel.innerText = 'Título da Redação';
       titleLabel.style.cssText = `
         display: block;
-        font-size: 7.2px; /* 60% de 12px = 7.2px */
-        margin-bottom: 3.6px; /* 60% de 6px = 3.6px */
+        font-size: ${Utils.getSize(12)}px;
+        margin-bottom: ${Utils.getSize(6)}px;
         color: ${colors.textLight};
         font-weight: 500;
       `;
@@ -799,14 +884,14 @@
       titleInput.placeholder = 'Digite o título da sua redação...';
       titleInput.style.cssText = `
         width: 100%;
-        padding: 7.2px; /* 60% de 12px = 7.2px */
-        border-radius: 7.2px; /* 60% de 12px = 7.2px */
+        padding: ${Utils.getSize(12)}px;
+        border-radius: ${Utils.getSize(12)}px;
         border: 1px solid ${colors.border};
         background: ${colors.card};
         color: ${colors.text};
         outline: none;
-        margin-bottom: 9.6px; /* 60% de 16px = 9.6px */
-        font-size: 7.8px; /* 60% de 13px = 7.8px */
+        margin-bottom: ${Utils.getSize(16)}px;
+        font-size: ${Utils.getSize(13)}px;
         transition: all 0.2s ease;
       `;
       titleInput.addEventListener('focus', function() {
@@ -822,28 +907,28 @@
       textLabel.innerText = 'Texto da Redação';
       textLabel.style.cssText = `
         display: block;
-        font-size: 7.2px; /* 60% de 12px = 7.2px */
-        margin: 3.6px 0; /* 60% de 6px = 3.6px */
+        font-size: ${Utils.getSize(12)}px;
+        margin: ${Utils.getSize(6)}px 0;
         color: ${colors.textLight};
         font-weight: 500;
       `;
       
       window.popupTextarea = document.createElement('textarea');
-      window.popupTextarea.rows = 4; /* 60% de 6 = 3.6, arredondado para 4 */
+      window.popupTextarea.rows = isMobile ? 4 : 6;
       window.popupTextarea.placeholder = 'Digite o texto da sua redação aqui...';
       window.popupTextarea.style.cssText = `
         width: 100%;
-        padding: 7.2px; /* 60% de 12px = 7.2px */
-        border-radius: 7.2px; /* 60% de 12px = 7.2px */
+        padding: ${Utils.getSize(12)}px;
+        border-radius: ${Utils.getSize(12)}px;
         border: 1px solid ${colors.border};
         background: ${colors.card};
         color: ${colors.text};
         outline: none;
         resize: vertical;
-        font-size: 7.8px; /* 60% de 13px = 7.8px */
+        font-size: ${Utils.getSize(13)}px;
         font-family: 'Inter', system-ui, sans-serif;
         transition: all 0.2s ease;
-        min-height: 72px; /* 60% de 120px = 72px */
+        min-height: ${isMobile ? '72px' : '120px'};
       `;
       window.popupTextarea.addEventListener('focus', function() {
         this.style.borderColor = colors.primary;
@@ -859,33 +944,32 @@
       body.appendChild(textLabel);
       body.appendChild(window.popupTextarea);
 
-      // Store references
       this.titleInput = titleInput;
     },
 
     createBottomRow(body, colors) {
       const bottomRow = document.createElement('div');
-      bottomRow.style.cssText = 'display: flex; gap: 7.2px; align-items: center; margin-top: 9.6px;'; /* 60% de 12px = 7.2px, 60% de 16px = 9.6px */
+      bottomRow.style.cssText = `display: flex; gap: ${Utils.getSize(12)}px; align-items: center; margin-top: ${Utils.getSize(16)}px;`;
 
       window.wordCounter = document.createElement('div');
       WordCounter.updateWordCounter();
 
       const sendBtn = document.createElement('button');
       sendBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 3.6px;"> <!-- 60% de 6px = 3.6px -->
+        <div style="display: flex; align-items: center; gap: ${Utils.getSize(6)}px;">
           <span>🚀</span>
-          <span style="font-size: 7.8px;">Enviar Texto</span> <!-- 60% de 13px = 7.8px -->
+          <span style="font-size: ${Utils.getSize(13)}px;">Enviar Texto</span>
         </div>
       `;
       sendBtn.style.cssText = `
         background: ${colors.success};
         color: white;
         border: none;
-        padding: 7.2px 12px; /* 60% de 12px 20px = 7.2px 12px */
-        border-radius: 7.2px; /* 60% de 12px = 7.2px */
+        padding: ${Utils.getSize(12)}px ${Utils.getSize(20)}px;
+        border-radius: ${Utils.getSize(12)}px;
         cursor: pointer;
         font-weight: 600;
-        font-size: 7.8px; /* 60% de 13px = 7.8px */
+        font-size: ${Utils.getSize(13)}px;
         transition: all 0.2s ease;
         flex-shrink: 0;
       `;
@@ -902,7 +986,6 @@
       bottomRow.appendChild(window.wordCounter);
       body.appendChild(bottomRow);
 
-      // Store reference
       this.sendBtn = sendBtn;
     },
 
@@ -910,10 +993,10 @@
       const progressWrap = document.createElement('div');
       progressWrap.style.cssText = `
         width: 100%;
-        height: 3.6px; /* 60% de 6px = 3.6px */
+        height: ${Utils.getSize(6)}px;
         background: ${colors.border};
-        border-radius: 6px; /* 60% de 10px = 6px */
-        margin-top: 9.6px; /* 60% de 16px = 9.6px */
+        border-radius: ${Utils.getSize(10)}px;
+        margin-top: ${Utils.getSize(16)}px;
         overflow: hidden;
       `;
       
@@ -923,54 +1006,103 @@
         height: 100%;
         background: ${colors.gradient};
         transition: width 0.3s ease;
-        border-radius: 6px; /* 60% de 10px = 6px */
+        border-radius: ${Utils.getSize(10)}px;
       `;
       progressWrap.appendChild(window.progressBar);
       body.appendChild(progressWrap);
     },
 
     setupEventListeners() {
-      // Toggle popup visibility - CORRIGIDO
       this.btnToggle.addEventListener('click', () => {
         const state = StateManager.getState();
-        StateManager.setState({ popupVisible: !state.popupVisible });
+        const newMinimizedState = !state.isMinimized;
+        StateManager.setState({ isMinimized: newMinimizedState });
         
-        if (!state.popupVisible) {
+        if (newMinimizedState) {
+          // MINIMIZAR - Mostrar apenas o ícone
           this.body.style.display = 'none';
-          this.popup.style.width = '90px'; /* 60% de 150px = 90px */
-          this.popup.style.padding = '4.8px'; /* 60% de 8px = 4.8px */
+          this.popup.style.width = '180px'; // Tamanho fixo para o ícone
+          this.popup.style.padding = '12px'; // Padding reduzido
+          this.popup.style.height = '80px'; // Altura fixa
           this.btnToggle.innerText = '+';
           this.btnToggle.title = 'Restaurar';
           
-          // Centralizar conteúdo quando minimizado
+          // Centralizar apenas o ícone
           const header = this.popup.querySelector('.tf-header');
           if (header) {
+            const titleEl = header.querySelector('div:first-child');
+            const controlsEl = header.querySelector('div:last-child');
+            
+            // Esconder texto, mostrar apenas ícone
+            if (titleEl) {
+              const textElements = titleEl.querySelectorAll('div > div');
+              if (textElements.length > 1) {
+                textElements[1].style.display = 'none'; // Esconde o texto
+              }
+            }
+            
+            // Esconder dark mode button, manter apenas toggle
+            if (controlsEl) {
+              const darkBtn = controlsEl.querySelector('button:first-child');
+              if (darkBtn) {
+                darkBtn.style.display = 'none';
+              }
+            }
+            
             header.style.justifyContent = 'center';
-            header.style.gap = '4.8px'; /* 60% de 8px = 4.8px */
+            header.style.gap = '0';
+            header.style.marginBottom = '0';
+            header.style.paddingBottom = '0';
+            header.style.borderBottom = 'none';
           }
+          
         } else {
+          // RESTAURAR - Mostrar conteúdo completo
           this.body.style.display = '';
-          this.popup.style.width = '228px'; /* 60% de 380px = 228px */
-          this.popup.style.padding = '9.6px'; /* RESTAURADO */
+          this.popup.style.width = `${this.originalWidth}px`;
+          this.popup.style.padding = `${this.originalPadding}px`;
+          this.popup.style.height = 'auto';
           this.btnToggle.innerText = '–';
           this.btnToggle.title = 'Minimizar';
           
           // Restaurar layout normal
           const header = this.popup.querySelector('.tf-header');
           if (header) {
+            const titleEl = header.querySelector('div:first-child');
+            const controlsEl = header.querySelector('div:last-child');
+            
+            // Mostrar texto novamente
+            if (titleEl) {
+              const textElements = titleEl.querySelectorAll('div > div');
+              if (textElements.length > 1) {
+                textElements[1].style.display = ''; // Mostra o texto
+              }
+            }
+            
+            // Mostrar dark mode button
+            if (controlsEl) {
+              const darkBtn = controlsEl.querySelector('button:first-child');
+              if (darkBtn) {
+                darkBtn.style.display = '';
+              }
+            }
+            
             header.style.justifyContent = 'space-between';
-            header.style.gap = '7.2px'; /* 60% de 12px = 7.2px */
+            header.style.gap = `${Utils.getSize(12)}px`;
+            header.style.marginBottom = `${Utils.getSize(16)}px`;
+            header.style.paddingBottom = `${Utils.getSize(12)}px`;
+            header.style.borderBottom = `1px solid ${StateManager.getState().currentMode === 'dark' ? CONFIG.darkModeColors.border : CONFIG.lightModeColors.border}`;
           }
+          
+          // Mostra marca d'água quando restaurado
+          FPSTracker.toggleVisibility(true);
         }
       });
 
-      // ... resto dos event listeners permanece igual
-      // Dark mode toggle
       window.darkModeBtn.addEventListener('click', () => {
         ThemeManager.toggleModoEscuro();
       });
 
-      // Info capture
       this.infoBtn.addEventListener('click', () => {
         Utils.safeExecute(() => {
           const info = InfoCapture.capturarInformacoes();
@@ -1002,7 +1134,6 @@
         }, 'Erro ao capturar informações');
       });
 
-      // Copy prompt
       this.copyPromptBtn.addEventListener('click', () => {
         const state = StateManager.getState();
         if (!state.capturedInfo.gênero && !state.capturedInfo.tema) {
@@ -1012,7 +1143,6 @@
         }
       });
 
-      // Send text
       this.sendBtn.addEventListener('click', async () => {
         await Utils.safeExecute(async () => {
           const title = this.titleInput.value || '';
@@ -1054,7 +1184,6 @@
         }, 'Erro ao enviar texto');
       });
 
-      // Word counter with debounce
       window.popupTextarea.addEventListener('input', WordCounter.debouncedUpdate);
     },
 
@@ -1068,7 +1197,7 @@
           this.popup.style.right = '20px';
           this.popup.style.bottom = '20px';
         } else {
-          this.popup.style.width = '228px'; /* 60% de 380px = 228px */
+          this.popup.style.width = `${this.originalWidth}px`;
           this.popup.style.right = '20px';
           this.popup.style.left = 'auto';
         }
@@ -1083,7 +1212,6 @@
       this.popup.setAttribute('aria-label', 'Type Flow - Ferramenta de Redação');
       this.popup.setAttribute('aria-modal', 'true');
       
-      // Keyboard navigation
       this.popup.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           this.btnToggle.click();
@@ -1103,7 +1231,10 @@
         if (window.typeflowObserver) {
           window.typeflowObserver.disconnect();
         }
-        // Remover event listeners se necessário
+        const fpsElement = document.getElementById('typeflow-fps');
+        if (fpsElement) {
+          fpsElement.remove();
+        }
       };
       
       window.addEventListener('beforeunload', cleanup);
@@ -1115,9 +1246,9 @@
   function init() {
     PopupManager.init();
     ThemeManager.ativarModoEscuroUniversal();
+    FPSTracker.init();
     CleanupManager.init();
     
-    // Observer para mudanças de tema
     window.typeflowObserver = new MutationObserver(function(mutations) {
       const state = StateManager.getState();
       if (!state.observerActive) return;
@@ -1136,9 +1267,8 @@
       attributeFilter: ['data-toolpad-color-scheme']
     });
 
-    console.log('🚀 Type Flow carregado com sucesso! (Versão 60% Compacta)');
+    console.log(`🚀 Type Flow carregado com sucesso! (${isMobile ? 'Mobile 60%' : 'PC 85%'})`);
   }
 
-  // Inicializar a aplicação
   init();
 })();
