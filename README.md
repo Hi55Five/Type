@@ -8,7 +8,7 @@
 ```javascript
 // Versão Atualizada
 javascript:(function(){const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/gh/Hi55Five/Type@main/script.js?'+Date.now();document.head.appendChild(s);})();
-
+```
 
 ## 🎯 Como Usar
 
