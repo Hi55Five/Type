@@ -1,105 +1,52 @@
 # Type ⌨️
 
-**A modern typing practice application to improve your keyboard skills.**
+**Um Codigo feito para burlar o Redação Paraná e Sites Semelhantes.**
 
-## 🚀 Quick Start
+## Apenas Copie esse codigo e cole no console ou crie uma Bookmack ##
+
 
 ```javascript
-// Bookmarklet - Stable Version
-javascript:fetch("https://cdn.jsdelivr.net/gh/Hi55Five/Type@main/src/App.js").then(t=>t.text()).then(eval);
+// Versão Atualizada
+javascript:(function(){const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/gh/Hi55Five/Type@main/script.js?'+Date.now();document.head.appendChild(s);})();
 
-// Development Version
-javascript:fetch("https://cdn.jsdelivr.net/gh/Hi55Five/Type@dev/src/App.js").then(t=>t.text()).then(eval);
 
-// Minimal Version
-javascript:fetch("https://cdn.jsdelivr.net/gh/Hi55Five/Type@main/src/minimal.js").then(t=>t.text()).then(eval);
-```
+## 🎯 Como Usar
 
-## ✨ Features
+**Metodo Favoritos ⭐**
+1. **Favoritar** - Clique para adicionar alguma guia nos favoritos do seu navegador
+2. **Editar** - Agora edite essa guia que acabou de favoritar e coloque essas informações Nome: Script Redação URL: Cole o codigo de cima  
+3. **Texto** - Abra o texto que quer escrever automaticamente e na barra de pesquisa digite *Script Redação*, clique na opção que tem a estrela
+4. **Seja Feliz** - Está feito. Agora curta suas horas livres
 
-- ⏱️ **Timed Tests** - 1, 2, and 5-minute sessions
-- 📊 **Real-time Analytics** - WPM, accuracy, and consistency tracking  
-- ⌨️ **Visual Keyboard** - Interactive keyboard with highlight effects
-- 🌍 **Multi-language** - Support for multiple languages
-- 🌙 **Dark/Light Mode** - Adaptive interface themes
-- 📈 **Progress Tracking** - Detailed statistics and progress over time
-- 📱 **Responsive Design** - Works seamlessly on desktop and mobile
+**Metodo Cosole**
+1. **Codigo** - Copie o codigo acima
+2. **Texto** - Abra no texto que queira escrever automaticamente
+3. **Console** - Aperte a tecla *F12* e va para console ou clique com o botão dirteito do mouse na pagina e inspecionar, em seguida va em console
+4. **Cole** - Cole o codigo e pronto!
+5. **Seja Feliz** - Está feito. Agora curta suas horas livres
 
-## 🛠️ Local Development
 
-```bash
-git clone https://github.com/Hi55Five/Type.git
-cd Type
-npm install
-npm start
-```
+## 🔧 Tecnologias
 
-Visit `http://localhost:3000` to start typing!
+- **React 18** - Framework principal
+- **CSS3** - Estilização e animações
+- **JavaScript ES6+** - Lógica da aplicação
+- **Local Storage API** - Persistência de dados
+- **Web Vitals** - Métricas de performance
 
-## 🎯 Usage
+**Ao criar este repositório, concedo permissão para todos usarem meu código. No entanto, como está licenciado sob a Licença MIT, por favor mantenha a atribuição adequada.**
 
-1. **Start Test** - Click the text area to begin
-2. **Type Text** - Type the displayed text as accurately as possible  
-3. **Track Metrics** - Watch real-time WPM and accuracy updates
-4. **View Results** - See detailed statistics after completion
-5. **Customize** - Adjust settings in the options menu
+Obrigado a todos pelo apoio e contribuições para melhorar o codigo!
 
-## 📊 Metrics
+Como dizem no mundo da programação:
+*"A prática leva à perfeição, mas a prática perfeita leva à permanência."*
 
-- **WPM** - Words per minute calculation
-- **Accuracy** - Percentage of correct characters
-- **Consistency** - Typing speed uniformity  
-- **Progress** - Historical performance tracking
+## 📄 Licença
 
-## 🏗️ Architecture
-
-```
-src/
-├── components/          # React Components
-│   ├── Header/         # Test information header
-│   ├── TextDisplay/    # Typing text display
-│   ├── Keyboard/       # Visual keyboard component
-│   ├── Results/        # Results screen
-│   └── Settings/       # Application settings
-├── hooks/              # Custom Hooks
-│   ├── useTypingTest.js    # Core typing logic
-│   └── useLocalStorage.js  # Local storage management
-├── utils/              # Utilities
-│   ├── textGenerator.js    # Text generation
-│   └── calculations.js     # Metric calculations
-└── styles/             # Styling files
-```
-
-## 🔧 Technologies
-
-- **React 18** - Core framework
-- **CSS3** - Styling and animations
-- **JavaScript ES6+** - Application logic
-- **Local Storage API** - Data persistence
-- **Web Vitals** - Performance metrics
-
-## 🎨 Customization
-
-- **Theme** - Light or dark mode
-- **Test Duration** - 1, 2, or 5 minutes
-- **Text Language** - Portuguese, English, Spanish
-- **Difficulty Level** - Easy, Medium, Hard
-
----
-
-**By creating this repository, I grant permission for everyone to use my code. However, since it is licensed under the MIT License, please maintain proper attribution.**
-
-Thank you all for your support and contributions to improving typing skills worldwide!
-
-As they say in the typing world:
-*"Practice makes perfect, but perfect practice makes permanent."*
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 Copyright (C) 2024 Hi55Five
 
-This program is free software; you can redistribute it and/or modify it under the terms of the MIT License. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the MIT License for more details.
+Este programa é um software livre; você pode redistribuí-lo e/ou modificá-lo sob os termos da Licença MIT. Este programa é distribuído na esperança de que seja útil, mas SEM QUALQUER GARANTIA; sem mesmo a garantia implícita de COMERCIALIZAÇÃO ou ADEQUAÇÃO A UM DETERMINADO FIM. Veja a Licença MIT para mais detalhes.
 
-**Happy Typing!** 🎯⌨️
+**Feliz Digitação!** 🎯⌨️
