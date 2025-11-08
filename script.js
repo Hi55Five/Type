@@ -37,6 +37,154 @@
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const popupSize = isMobile ? 0.6 : 0.85; // 60% mobile, 85% PC
 
+  // ========== SISTEMA DE SPLASH SCREEN ==========
+  const SplashScreen = {
+    show() {
+      const splash = document.createElement('div');
+      splash.id = 'typeflow-splash';
+      splash.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: ${CONFIG.darkModeColors.background};
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000001;
+        font-family: 'Inter', system-ui, sans-serif;
+        color: ${CONFIG.darkModeColors.text};
+        transition: opacity 0.5s ease;
+      `;
+
+      splash.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 48px; margin-bottom: 20px;">🌀</div>
+          <h1 style="font-size: 28px; margin-bottom: 10px; color: ${CONFIG.darkModeColors.textImportant};">
+            Type Flow
+          </h1>
+          <p style="color: ${CONFIG.darkModeColors.textLight}; margin-bottom: 30px;">
+            Ferramenta de Redação Avançada
+          </p>
+          <div style="
+            width: 60px;
+            height: 4px;
+            background: ${CONFIG.darkModeColors.gradient};
+            border-radius: 2px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+          ">
+            <div id="splash-progress" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              height: 100%;
+              background: ${CONFIG.darkModeColors.primary};
+              width: 0%;
+              transition: width 0.3s ease;
+            "></div>
+          </div>
+          <p style="color: ${CONFIG.darkModeColors.textLight}; font-size: 12px; margin-top: 20px;">
+            Carregando recursos...
+          </p>
+        </div>
+      `;
+
+      document.body.appendChild(splash);
+      this.splash = splash;
+      this.animateProgress();
+    },
+
+    animateProgress() {
+      const progress = document.getElementById('splash-progress');
+      let width = 0;
+      
+      const interval = setInterval(() => {
+        width += Math.random() * 15;
+        if (width >= 100) {
+          width = 100;
+          clearInterval(interval);
+        }
+        progress.style.width = width + '%';
+      }, 200);
+    },
+
+    hide() {
+      if (this.splash) {
+        this.splash.style.opacity = '0';
+        setTimeout(() => {
+          if (this.splash && this.splash.parentNode) {
+            this.splash.parentNode.removeChild(this.splash);
+          }
+        }, 500);
+      }
+    }
+  };
+
+  // ========== SISTEMA DE TOAST ==========
+  const ToastSystem = {
+    show(message, duration = 3000, position = 'top') {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        ${position === 'top' ? 'top: 20px' : 'bottom: 20px'};
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: ${CONFIG.darkModeColors.surface};
+        color: ${CONFIG.darkModeColors.text};
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: 1px solid ${CONFIG.darkModeColors.border};
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        z-index: 1000002;
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 14px;
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      `;
+
+      toast.innerHTML = `
+        <span>${this.getIcon(message)}</span>
+        <span>${message}</span>
+      `;
+
+      document.body.appendChild(toast);
+
+      // Animar entrada
+      setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+      }, 100);
+
+      // Remover após duração
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, duration);
+    },
+
+    getIcon(message) {
+      if (message.includes('✅') || message.includes('sucesso')) return '✅';
+      if (message.includes('❌') || message.includes('erro')) return '❌';
+      if (message.includes('⭐') || message.includes('bem-vindo')) return '⭐';
+      if (message.includes('🚀')) return '🚀';
+      if (message.includes('🌿')) return '🌿';
+      return 'ℹ️';
+    }
+  };
+
   // ========== SISTEMA DE FPS ==========
   const FPSTracker = {
     fps: 0,
@@ -121,7 +269,8 @@
       popupVisible: true,
       isTyping: false,
       typingQueue: [],
-      isMinimized: false
+      isMinimized: false,
+      splashShown: false
     },
     
     setState(newState) {
@@ -162,7 +311,7 @@
         return await operation();
       } catch (error) {
         console.error(`${errorMessage}:`, error);
-        NotificationSystem.mostrarNotificacao(`❌ ${errorMessage}`, 'error');
+        ToastSystem.show(`❌ ${errorMessage}`, 4000);
         return null;
       }
     },
@@ -181,6 +330,10 @@
     // Função para calcular tamanhos baseado no dispositivo
     getSize(baseSize) {
       return baseSize * popupSize;
+    },
+
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
   };
 
@@ -323,7 +476,7 @@
         StateManager.setState({ observerActive: true, isApplyingStyles: false });
       }, 1000);
       
-      NotificationSystem.mostrarNotificacao('🌙 Modo escuro ativado', 'success', 2000);
+      ToastSystem.show('🌙 Modo escuro ativado', 2000);
     },
 
     desativarModoEscuro() {
@@ -347,7 +500,7 @@
         StateManager.setState({ observerActive: true, isApplyingStyles: false });
       }, 1000);
       
-      NotificationSystem.mostrarNotificacao('☀️ Modo claro ativado', 'success', 2000);
+      ToastSystem.show('☀️ Modo claro ativado', 2000);
     },
 
     aplicarEstilosModoEscuro() {
@@ -423,7 +576,7 @@
       
       try {
         await navigator.clipboard.writeText(prompt);
-        NotificationSystem.mostrarNotificacao('✅ Prompt copiado para a área de transferência!', 'success');
+        ToastSystem.show('✅ Prompt copiado para a área de transferência!', 3000);
       } catch (err) {
         const textArea = document.createElement('textarea');
         textArea.value = prompt;
@@ -431,9 +584,9 @@
         textArea.select();
         try {
           document.execCommand('copy');
-          NotificationSystem.mostrarNotificacao('✅ Prompt copiado para a área de transferência!', 'success');
+          ToastSystem.show('✅ Prompt copiado para a área de transferência!', 3000);
         } catch (fallbackErr) {
-          NotificationSystem.mostrarNotificacao('❌ Erro ao copiar. Aqui está o prompt:<br><br>' + prompt, 'error', 6000);
+          ToastSystem.show('❌ Erro ao copiar. Aqui está o prompt:<br><br>' + prompt, 6000);
         }
         document.body.removeChild(textArea);
       }
@@ -1121,15 +1274,12 @@
           console.log('==============================');
           
           if (info.tema || info.gênero) {
-            NotificationSystem.mostrarNotificacao(
-              `📋 Informações capturadas!<br>
-              <strong>Tema:</strong> ${info.tema || 'Não encontrado'}<br>
-              <strong>Gênero:</strong> ${info.gênero || 'Não encontrado'}<br>
-              <strong>Palavras:</strong> ${StateManager.getState().wordGoal}`,
-              'success'
+            ToastSystem.show(
+              `📋 Informações capturadas! Tema: ${info.tema || 'Não encontrado'}`,
+              4000
             );
           } else {
-            NotificationSystem.mostrarNotificacao('❌ Nenhuma informação encontrada. Verifique se está na página correta.', 'error');
+            ToastSystem.show('❌ Nenhuma informação encontrada. Verifique se está na página correta.', 4000);
           }
         }, 'Erro ao capturar informações');
       });
@@ -1137,7 +1287,7 @@
       this.copyPromptBtn.addEventListener('click', () => {
         const state = StateManager.getState();
         if (!state.capturedInfo.gênero && !state.capturedInfo.tema) {
-          NotificationSystem.mostrarNotificacao('ℹ️ Nenhuma informação capturada. Clique em "Capturar Info" primeiro.', 'info', 3000);
+          ToastSystem.show('ℹ️ Nenhuma informação capturada. Clique em "Capturar Info" primeiro.', 3000);
         } else {
           InfoCapture.copiarPromptParaAreaTransferencia();
         }
@@ -1149,7 +1299,7 @@
           const text = window.popupTextarea.value || '';
 
           if (!text.trim() && !title.trim()) {
-            NotificationSystem.mostrarNotificacao('❌ Digite título ou texto antes de enviar.', 'error');
+            ToastSystem.show('❌ Digite título ou texto antes de enviar.', 4000);
             return;
           }
 
@@ -1166,7 +1316,7 @@
 
           let target = findVisibleTextarea() || findContentEditable();
           if (!target) {
-            NotificationSystem.mostrarNotificacao('❌ Campo da redação não encontrado. Abra a página onde você escreve a redação.', 'error');
+            ToastSystem.show('❌ Campo da redação não encontrado. Abra a página onde você escreve a redação.', 5000);
             return;
           }
 
@@ -1180,7 +1330,7 @@
           
           await TypingEngine.typeToElement(target, text);
           
-          NotificationSystem.mostrarNotificacao('✅ Digitação concluída com sucesso!', 'success');
+          ToastSystem.show('✅ Digitação concluída com sucesso!', 3000);
         }, 'Erro ao enviar texto');
       });
 
@@ -1243,12 +1393,19 @@
   };
 
   // ========== INICIALIZAÇÃO ==========
-  function init() {
+  async function init() {
+    // Mostrar splash screen primeiro
+    SplashScreen.show();
+    
+    // Inicializar componentes principais
+    await Utils.delay(1000);
+    
     PopupManager.init();
     ThemeManager.ativarModoEscuroUniversal();
     FPSTracker.init();
     CleanupManager.init();
     
+    // Configurar observer
     window.typeflowObserver = new MutationObserver(function(mutations) {
       const state = StateManager.getState();
       if (!state.observerActive) return;
@@ -1266,6 +1423,22 @@
       attributes: true,
       attributeFilter: ['data-toolpad-color-scheme']
     });
+
+    // Mostrar notificações de boas-vindas
+    await Utils.delay(500);
+    ToastSystem.show('🌿 Type Flow carregado com sucesso!', 3000);
+    
+    await Utils.delay(1000);
+    ToastSystem.show(`⭐ Bem-vindo ao Type Flow!`, 3000);
+    
+    await Utils.delay(500);
+    ToastSystem.show(`🚀 Ferramenta de Redação Avançada`, 3000);
+
+    // Esconder splash screen
+    await Utils.delay(1000);
+    SplashScreen.hide();
+    
+    StateManager.setState({ splashShown: true });
 
     console.log(`🚀 Type Flow carregado com sucesso! (${isMobile ? 'Mobile 60%' : 'PC 85%'})`);
   }
