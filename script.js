@@ -337,115 +337,6 @@
     }
   };
 
-  // ========== SISTEMA DE NOTIFICAÇÕES ==========
-  const NotificationSystem = {
-    mostrarNotificacao(mensagem, tipo = 'info', tempo = 4000) {
-      let notificacaoContainer = document.getElementById('typeflow-notifications');
-      if (!notificacaoContainer) {
-        notificacaoContainer = document.createElement('div');
-        notificacaoContainer.id = 'typeflow-notifications';
-        notificacaoContainer.style.cssText = `
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          z-index: 1000000;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          max-width: 350px;
-        `;
-        document.body.appendChild(notificacaoContainer);
-      }
-
-      const notificacao = document.createElement('div');
-      const bgColor = tipo === 'success' ? '#10b981' : tipo === 'error' ? '#ef4444' : '#3b82f6';
-      
-      notificacao.style.cssText = `
-        background: ${bgColor};
-        color: white;
-        padding: 16px;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        font-family: 'Inter', system-ui, sans-serif;
-        font-size: 14px;
-        line-height: 1.5;
-        transform: translateX(400px);
-        opacity: 0;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.1);
-      `;
-
-      const progressBar = document.createElement('div');
-      progressBar.style.cssText = `
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        height: 3px;
-        background: rgba(255,255,255,0.8);
-        width: 100%;
-        transform: scaleX(1);
-        transform-origin: left;
-        transition: transform ${tempo}ms linear;
-      `;
-      notificacao.appendChild(progressBar);
-
-      notificacao.innerHTML += `
-        <div style="display: flex; align-items: flex-start; gap: 10px;">
-          <div style="font-size: 18px;">
-            ${tipo === 'success' ? '✅' : tipo === 'error' ? '❌' : 'ℹ️'}
-          </div>
-          <div style="flex: 1;">${mensagem}</div>
-        </div>
-      `;
-      
-      notificacaoContainer.appendChild(notificacao);
-
-      setTimeout(() => {
-        notificacao.style.transform = 'translateX(0)';
-        notificacao.style.opacity = '1';
-        progressBar.style.transform = 'scaleX(0)';
-      }, 100);
-
-      notificacao.addEventListener('click', () => {
-        this.fecharNotificacao(notificacao);
-      });
-
-      const timeout = setTimeout(() => {
-        this.fecharNotificacao(notificacao);
-      }, tempo);
-
-      notificacao.addEventListener('mouseenter', () => {
-        progressBar.style.transition = 'none';
-        clearTimeout(timeout);
-      });
-
-      notificacao.addEventListener('mouseleave', () => {
-        const remainingTime = tempo * 0.7;
-        progressBar.style.transition = `transform ${remainingTime}ms linear`;
-        progressBar.style.transform = 'scaleX(0)';
-        
-        setTimeout(() => {
-          this.fecharNotificacao(notificacao);
-        }, remainingTime);
-      });
-    },
-
-    fecharNotificacao(notificacao) {
-      notificacao.style.transform = 'translateX(400px)';
-      notificacao.style.opacity = '0';
-      
-      setTimeout(() => {
-        if (notificacao.parentNode) {
-          notificacao.parentNode.removeChild(notificacao);
-        }
-      }, 400);
-    }
-  };
-
   // ========== GERENCIAMENTO DE MODO ESCURO/CLARO ==========
   const ThemeManager = {
     toggleModoEscuro() {
@@ -593,124 +484,85 @@
     }
   };
 
-  // ========== SISTEMA DE DIGITAÇÃO ==========
-  const TypingEngine = {
-    async typeToElement(element, text) {
-      const state = StateManager.getState();
-      
-      if (state.isTyping) {
-        state.typingQueue.push({ element, text });
-        StateManager.setState({ typingQueue: state.typingQueue });
-        return;
-      }
-      
-      StateManager.setState({ isTyping: true });
-      await this.executeTyping(element, text);
-      StateManager.setState({ isTyping: false });
-      
-      this.processQueue();
+  // ========== SISTEMA DE DESBLOQUEIO DE COLAGEM ==========
+  const PasteUnlocker = {
+    init() {
+      this.unlockPaste();
+      this.setupPasteObserver();
     },
 
-    async processQueue() {
-      const state = StateManager.getState();
-      if (state.typingQueue.length > 0) {
-        const next = state.typingQueue.shift();
-        StateManager.setState({ typingQueue: state.typingQueue });
-        await this.typeToElement(next.element, next.text);
-      }
-    },
-
-    async executeTyping(element, text) {
-      if (element.isContentEditable) {
-        await this.typeTextContentEditable(element, text);
-      } else {
-        await this.typeTextControlled(element, text);
-      }
-    },
-
-    emitEventsForChar(el, char) {
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: char, bubbles: true }));
-      try {
-        const ie = new InputEvent('input', { bubbles: true, data: char, inputType: 'insertText' });
-        el.dispatchEvent(ie);
-      } catch {
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      el.dispatchEvent(new KeyboardEvent('keyup', { key: char, bubbles: true }));
-    },
-
-    async typeTextControlled(el, text, delay = CONFIG.typingDelay) {
-      el.focus();
-      let descriptor = null;
+    unlockPaste() {
+      console.log('🔓 Iniciando desbloqueio de colagem...');
       
-      if (el instanceof HTMLTextAreaElement) descriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
-      else if (el instanceof HTMLInputElement) descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
-      else {
-        const proto = Object.getPrototypeOf(el);
-        if (proto) descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
-      }
-
-      let setValue = null;
-      if (descriptor && typeof descriptor.set === 'function') {
-        try { setValue = Function.prototype.call.bind(descriptor.set); } catch {}
-      }
-
-      if (setValue) setValue(el, '');
-      else try { el.value = ''; } catch { el.textContent = ''; }
+      // Remove bloqueios de todos os campos de texto
+      const campos = document.querySelectorAll('textarea, input[type="text"], [contenteditable="true"]');
       
-      try { el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'deleteContentBackward' })); } catch {}
-
-      const total = text.length || 1;
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        const currentValue = (el.value ?? el.textContent ?? '') + char;
+      campos.forEach(campo => {
+        // Remove atributos de bloqueio
+        campo.removeAttribute('onpaste');
+        campo.removeAttribute('oncopy');
+        campo.removeAttribute('oncut');
         
-        if (setValue) setValue(el, currentValue);
-        else try { el.value = currentValue; } catch { el.textContent = currentValue; }
+        // Remove event listeners
+        campo.onpaste = null;
+        campo.oncopy = null;
+        campo.oncut = null;
+        
+        // Permite tudo
+        campo.addEventListener('paste', e => e.stopPropagation(), true);
+        campo.addEventListener('copy', e => e.stopPropagation(), true);
+        campo.addEventListener('cut', e => e.stopPropagation(), true);
+      });
+      
+      console.log(`🔓 Bloqueios removidos de ${campos.length} campos`);
+      
+      // Método nuclear para garantir desbloqueio
+      setTimeout(() => {
+        this.nuclearUnlock();
+      }, 2000);
+    },
 
-        this.emitEventsForChar(el, char);
-
-        const pct = Math.round(((i + 1) / total) * 100);
-        if (window.progressBar) {
-          window.progressBar.style.width = pct + '%';
+    nuclearUnlock() {
+      // Substitui completamente os textareas problemáticos
+      const textareas = document.querySelectorAll('textarea');
+      textareas.forEach(textarea => {
+        if (textarea.onpaste || textarea.getAttribute('onpaste')) {
+          const novoTextarea = textarea.cloneNode(true);
+          novoTextarea.onpaste = null;
+          novoTextarea.oncopy = null;
+          novoTextarea.oncut = null;
+          novoTextarea.removeAttribute('onpaste');
+          novoTextarea.removeAttribute('oncopy');
+          novoTextarea.removeAttribute('oncut');
+          textarea.parentNode.replaceChild(novoTextarea, textarea);
+          console.log('✅ Textarea substituído - colagem liberada!');
         }
-
-        await new Promise(r => setTimeout(r, delay));
-      }
-      
-      try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch {}
-      if (window.progressBar) {
-        window.progressBar.style.width = '100%';
-      }
+      });
     },
 
-    async typeTextContentEditable(el, text, delay = CONFIG.typingDelay) {
-      el.focus();
-      el.innerText = '';
-      const total = text.length || 1;
-      
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        el.innerText += char;
-        
-        try { 
-          el.dispatchEvent(new InputEvent('input', { bubbles: true, data: char, inputType: 'insertText' })); 
-        } catch { 
-          el.dispatchEvent(new Event('input', { bubbles: true })); 
-        }
-        
-        const pct = Math.round(((i + 1) / total) * 100);
-        if (window.progressBar) {
-          window.progressBar.style.width = pct + '%';
-        }
-        
-        await new Promise(r => setTimeout(r, delay));
-      }
-      
-      try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch {}
-      if (window.progressBar) {
-        window.progressBar.style.width = '100%';
-      }
+    setupPasteObserver() {
+      // Observa novos elementos adicionados à página
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) { // Element node
+              if (node.tagName === 'TEXTAREA' || node.tagName === 'INPUT') {
+                this.unlockPaste();
+              } else if (node.querySelectorAll) {
+                const campos = node.querySelectorAll('textarea, input[type="text"]');
+                if (campos.length > 0) {
+                  this.unlockPaste();
+                }
+              }
+            }
+          });
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
     }
   };
 
@@ -776,52 +628,21 @@
     }
   }
 
-  // ========== CONTADOR DE PALAVRAS ==========
-  const WordCounter = {
-    updateWordCounter() {
-      if (window.wordCounter && window.popupTextarea) {
-        const state = StateManager.getState();
-        const count = window.popupTextarea.value.trim().split(/\s+/).filter(Boolean).length;
-        const colors = state.currentMode === 'dark' ? CONFIG.darkModeColors : CONFIG.lightModeColors;
-        
-        window.wordCounter.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
-            <div style="background: ${colors.primary}; 
-                        width: 8px; height: 8px; border-radius: 50%;"></div>
-            <span style="color: ${colors.textLight};">
-              ${count} / ${state.wordGoal} palavras
-            </span>
-          </div>
-        `;
-      }
-    },
-
-    debouncedUpdate: Utils.debounce(function() {
-      WordCounter.updateWordCounter();
-    }, 300)
-  };
-
-  // ========== SISTEMA DE POPUP ==========
+  // ========== SISTEMA DE POPUP SIMPLIFICADO ==========
   const PopupManager = {
     init() {
       this.createPopup();
       this.setupEventListeners();
       this.setupResponsiveBehavior();
-      this.enhanceAccessibility();
     },
 
     createPopup() {
       const state = StateManager.getState();
       const colors = state.currentMode === 'dark' ? CONFIG.darkModeColors : CONFIG.lightModeColors;
 
-      // Tamanhos base fixos para evitar problemas no minimizar
-      const baseWidth = 380;
-      const basePadding = 16;
-      const baseBorderRadius = 16;
-
-      const currentWidth = Utils.getSize(baseWidth);
-      const currentPadding = Utils.getSize(basePadding);
-      const currentBorderRadius = Utils.getSize(baseBorderRadius);
+      const currentWidth = Utils.getSize(300); // Largura para 3 elementos
+      const currentPadding = Utils.getSize(16);
+      const currentBorderRadius = Utils.getSize(16);
 
       const popup = document.createElement('div');
       popup.id = 'typeflow-popup';
@@ -840,50 +661,61 @@
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         border: 1px solid ${colors.border};
         backdrop-filter: blur(10px);
-        max-height: 80vh;
-        overflow-y: auto;
+        max-height: 80px;
+        overflow: hidden;
       `;
 
-      this.createHeader(popup, colors, state.currentMode, currentPadding);
-      this.createBody(popup, colors);
+      this.createHeader(popup, colors, state.currentMode);
       
       document.body.appendChild(popup);
       this.popup = popup;
 
-      // Guardar dimensões originais
-      this.originalWidth = currentWidth;
-      this.originalPadding = currentPadding;
-
       new DragManager(popup);
     },
 
-    createHeader(popup, colors, currentMode, currentPadding) {
+    createHeader(popup, colors, currentMode) {
       const header = document.createElement('div');
       header.className = 'tf-header';
       header.style.cssText = `
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: ${Utils.getSize(12)}px;
-        margin-bottom: ${Utils.getSize(16)}px;
-        padding-bottom: ${Utils.getSize(12)}px;
-        border-bottom: 1px solid ${colors.border};
+        gap: ${Utils.getSize(8)}px;
+        cursor: move;
       `;
       
+      // Nome Type Flow
       const titleEl = document.createElement('div');
       titleEl.innerHTML = `
-        <div style="display: flex; align-items: center; gap: ${Utils.getSize(10)}px;">
+        <div style="display: flex; align-items: center; gap: ${Utils.getSize(8)}px;">
           <div style="font-size: ${Utils.getSize(20)}px;">🌀</div>
-          <div>
-            <div style="font-weight: 700; font-size: ${Utils.getSize(16)}px; color: ${colors.textImportant};">Type Flow</div>
-            <div style="font-size: ${Utils.getSize(11)}px; color: ${colors.textLight}; margin-top: ${Utils.getSize(2)}px;">Ferramenta de Redação</div>
-          </div>
+          <div style="font-weight: 700; font-size: ${Utils.getSize(16)}px; color: ${colors.textImportant};">Type Flow</div>
         </div>
       `;
       
       const controlsContainer = document.createElement('div');
-      controlsContainer.style.cssText = `display: flex; gap: ${Utils.getSize(6)}px;`;
+      controlsContainer.style.cssText = `display: flex; gap: ${Utils.getSize(8)}px; align-items: center;`;
       
+      // Botão Prompt IA
+      const promptBtn = document.createElement('button');
+      promptBtn.innerHTML = '🤖';
+      promptBtn.title = 'Criar Prompt para IA';
+      promptBtn.style.cssText = `
+        background: ${colors.gradient};
+        border: none;
+        color: white;
+        font-size: ${Utils.getSize(16)}px;
+        cursor: pointer;
+        width: ${Utils.getSize(36)}px;
+        height: ${Utils.getSize(36)}px;
+        border-radius: ${Utils.getSize(10)}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      `;
+      
+      // Botão Modo Claro/Escuro
       window.darkModeBtn = document.createElement('button');
       window.darkModeBtn.innerHTML = currentMode === 'dark' ? '☀️' : '🌙';
       window.darkModeBtn.title = currentMode === 'dark' ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro';
@@ -903,438 +735,46 @@
         backdrop-filter: blur(10px);
       `;
       
-      const btnToggle = document.createElement('button');
-      btnToggle.innerText = '–';
-      btnToggle.title = 'Minimizar';
-      btnToggle.style.cssText = `
-        background: rgba(255,255,255,0.1);
-        border: none;
-        color: ${colors.text};
-        font-size: ${Utils.getSize(18)}px;
-        cursor: pointer;
-        width: ${Utils.getSize(36)}px;
-        height: ${Utils.getSize(36)}px;
-        border-radius: ${Utils.getSize(10)}px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        backdrop-filter: blur(10px);
-      `;
-      
-      [window.darkModeBtn, btnToggle].forEach(btn => {
-        btn.addEventListener('mouseenter', function() {
-          this.style.background = 'rgba(255,255,255,0.2)';
-          this.style.transform = 'scale(1.1)';
-        });
-        btn.addEventListener('mouseleave', function() {
-          this.style.background = 'rgba(255,255,255,0.1)';
-          this.style.transform = 'scale(1)';
-        });
-      });
-      
+      controlsContainer.appendChild(promptBtn);
       controlsContainer.appendChild(window.darkModeBtn);
-      controlsContainer.appendChild(btnToggle);
       header.appendChild(titleEl);
       header.appendChild(controlsContainer);
       popup.appendChild(header);
 
-      this.btnToggle = btnToggle;
-    },
-
-    createBody(popup, colors) {
-      const body = document.createElement('div');
-      body.className = 'tf-body';
-      body.style.cssText = `margin-top: ${Utils.getSize(8)}px;`;
-
-      this.createTopButtons(body, colors);
-      this.createFormFields(body, colors);
-      this.createBottomRow(body, colors);
-      this.createProgressBar(body, colors);
-      
-      popup.appendChild(body);
-      this.body = body;
-    },
-
-    createTopButtons(body, colors) {
-      const topButtons = document.createElement('div');
-      topButtons.style.cssText = `display: flex; gap: ${Utils.getSize(8)}px; margin-bottom: ${Utils.getSize(16)}px;`;
-      
-      const infoBtn = document.createElement('button');
-      infoBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: ${Utils.getSize(6)}px;">
-          <span>📋</span>
-          <span style="font-size: ${Utils.getSize(12)}px;">Capturar Info</span>
-        </div>
-      `;
-      infoBtn.style.cssText = `
-        flex: 1;
-        padding: ${Utils.getSize(12)}px;
-        border-radius: ${Utils.getSize(12)}px;
-        border: 1px solid ${colors.border};
-        background: ${colors.card};
-        color: ${colors.text};
-        cursor: pointer;
-        font-size: ${Utils.getSize(12)}px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        backdrop-filter: blur(10px);
-      `;
-
-      const copyPromptBtn = document.createElement('button');
-      copyPromptBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: ${Utils.getSize(6)}px;">
-          <span>🤖</span>
-          <span style="font-size: ${Utils.getSize(12)}px;">Prompt IA</span>
-        </div>
-      `;
-      copyPromptBtn.title = 'Gerar prompt para inteligência artificial';
-      copyPromptBtn.style.cssText = `
-        flex: 1;
-        padding: ${Utils.getSize(12)}px;
-        border-radius: ${Utils.getSize(12)}px;
-        border: none;
-        background: ${colors.gradient};
-        color: white;
-        cursor: pointer;
-        font-size: ${Utils.getSize(12)}px;
-        font-weight: 600;
-        transition: all 0.2s ease;
-      `;
-
-      [infoBtn, copyPromptBtn].forEach(btn => {
+      // Efeitos hover
+      [promptBtn, window.darkModeBtn].forEach(btn => {
         btn.addEventListener('mouseenter', function() {
-          this.style.transform = 'translateY(-2px)';
-          this.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
+          this.style.transform = 'scale(1.1)';
+          this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
         });
         btn.addEventListener('mouseleave', function() {
-          this.style.transform = 'translateY(0)';
+          this.style.transform = 'scale(1)';
           this.style.boxShadow = 'none';
         });
       });
 
-      topButtons.appendChild(infoBtn);
-      topButtons.appendChild(copyPromptBtn);
-      body.appendChild(topButtons);
-
-      this.infoBtn = infoBtn;
-      this.copyPromptBtn = copyPromptBtn;
-    },
-
-    createFormFields(body, colors) {
-      const titleLabel = document.createElement('label');
-      titleLabel.innerText = 'Título da Redação';
-      titleLabel.style.cssText = `
-        display: block;
-        font-size: ${Utils.getSize(12)}px;
-        margin-bottom: ${Utils.getSize(6)}px;
-        color: ${colors.textLight};
-        font-weight: 500;
-      `;
-      
-      const titleInput = document.createElement('input');
-      titleInput.type = 'text';
-      titleInput.placeholder = 'Digite o título da sua redação...';
-      titleInput.style.cssText = `
-        width: 100%;
-        padding: ${Utils.getSize(12)}px;
-        border-radius: ${Utils.getSize(12)}px;
-        border: 1px solid ${colors.border};
-        background: ${colors.card};
-        color: ${colors.text};
-        outline: none;
-        margin-bottom: ${Utils.getSize(16)}px;
-        font-size: ${Utils.getSize(13)}px;
-        transition: all 0.2s ease;
-      `;
-      titleInput.addEventListener('focus', function() {
-        this.style.borderColor = colors.primary;
-        this.style.boxShadow = `0 0 0 3px ${colors.primary}20`;
-      });
-      titleInput.addEventListener('blur', function() {
-        this.style.borderColor = colors.border;
-        this.style.boxShadow = 'none';
-      });
-
-      const textLabel = document.createElement('label');
-      textLabel.innerText = 'Texto da Redação';
-      textLabel.style.cssText = `
-        display: block;
-        font-size: ${Utils.getSize(12)}px;
-        margin: ${Utils.getSize(6)}px 0;
-        color: ${colors.textLight};
-        font-weight: 500;
-      `;
-      
-      window.popupTextarea = document.createElement('textarea');
-      window.popupTextarea.rows = isMobile ? 4 : 6;
-      window.popupTextarea.placeholder = 'Digite o texto da sua redação aqui...';
-      window.popupTextarea.style.cssText = `
-        width: 100%;
-        padding: ${Utils.getSize(12)}px;
-        border-radius: ${Utils.getSize(12)}px;
-        border: 1px solid ${colors.border};
-        background: ${colors.card};
-        color: ${colors.text};
-        outline: none;
-        resize: vertical;
-        font-size: ${Utils.getSize(13)}px;
-        font-family: 'Inter', system-ui, sans-serif;
-        transition: all 0.2s ease;
-        min-height: ${isMobile ? '72px' : '120px'};
-      `;
-      window.popupTextarea.addEventListener('focus', function() {
-        this.style.borderColor = colors.primary;
-        this.style.boxShadow = `0 0 0 3px ${colors.primary}20`;
-      });
-      window.popupTextarea.addEventListener('blur', function() {
-        this.style.borderColor = colors.border;
-        this.style.boxShadow = 'none';
-      });
-
-      body.appendChild(titleLabel);
-      body.appendChild(titleInput);
-      body.appendChild(textLabel);
-      body.appendChild(window.popupTextarea);
-
-      this.titleInput = titleInput;
-    },
-
-    createBottomRow(body, colors) {
-      const bottomRow = document.createElement('div');
-      bottomRow.style.cssText = `display: flex; gap: ${Utils.getSize(12)}px; align-items: center; margin-top: ${Utils.getSize(16)}px;`;
-
-      window.wordCounter = document.createElement('div');
-      WordCounter.updateWordCounter();
-
-      const sendBtn = document.createElement('button');
-      sendBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: ${Utils.getSize(6)}px;">
-          <span>🚀</span>
-          <span style="font-size: ${Utils.getSize(13)}px;">Enviar Texto</span>
-        </div>
-      `;
-      sendBtn.style.cssText = `
-        background: ${colors.success};
-        color: white;
-        border: none;
-        padding: ${Utils.getSize(12)}px ${Utils.getSize(20)}px;
-        border-radius: ${Utils.getSize(12)}px;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: ${Utils.getSize(13)}px;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      `;
-      sendBtn.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-2px)';
-        this.style.boxShadow = '0 8px 20px rgba(16, 185, 129, 0.3)';
-      });
-      sendBtn.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0)';
-        this.style.boxShadow = 'none';
-      });
-
-      bottomRow.appendChild(sendBtn);
-      bottomRow.appendChild(window.wordCounter);
-      body.appendChild(bottomRow);
-
-      this.sendBtn = sendBtn;
-    },
-
-    createProgressBar(body, colors) {
-      const progressWrap = document.createElement('div');
-      progressWrap.style.cssText = `
-        width: 100%;
-        height: ${Utils.getSize(6)}px;
-        background: ${colors.border};
-        border-radius: ${Utils.getSize(10)}px;
-        margin-top: ${Utils.getSize(16)}px;
-        overflow: hidden;
-      `;
-      
-      window.progressBar = document.createElement('div');
-      window.progressBar.style.cssText = `
-        width: 0%;
-        height: 100%;
-        background: ${colors.gradient};
-        transition: width 0.3s ease;
-        border-radius: ${Utils.getSize(10)}px;
-      `;
-      progressWrap.appendChild(window.progressBar);
-      body.appendChild(progressWrap);
+      this.promptBtn = promptBtn;
     },
 
     setupEventListeners() {
-      this.btnToggle.addEventListener('click', () => {
-        const state = StateManager.getState();
-        const newMinimizedState = !state.isMinimized;
-        StateManager.setState({ isMinimized: newMinimizedState });
-        
-        if (newMinimizedState) {
-          // MINIMIZAR - Mostrar apenas o ícone
-          this.body.style.display = 'none';
-          this.popup.style.width = '180px'; // Tamanho fixo para o ícone
-          this.popup.style.padding = '12px'; // Padding reduzido
-          this.popup.style.height = '80px'; // Altura fixa
-          this.btnToggle.innerText = '+';
-          this.btnToggle.title = 'Restaurar';
-          
-          // Centralizar apenas o ícone
-          const header = this.popup.querySelector('.tf-header');
-          if (header) {
-            const titleEl = header.querySelector('div:first-child');
-            const controlsEl = header.querySelector('div:last-child');
-            
-            // Esconder texto, mostrar apenas ícone
-            if (titleEl) {
-              const textElements = titleEl.querySelectorAll('div > div');
-              if (textElements.length > 1) {
-                textElements[1].style.display = 'none'; // Esconde o texto
-              }
-            }
-            
-            // Esconder dark mode button, manter apenas toggle
-            if (controlsEl) {
-              const darkBtn = controlsEl.querySelector('button:first-child');
-              if (darkBtn) {
-                darkBtn.style.display = 'none';
-              }
-            }
-            
-            header.style.justifyContent = 'center';
-            header.style.gap = '0';
-            header.style.marginBottom = '0';
-            header.style.paddingBottom = '0';
-            header.style.borderBottom = 'none';
-          }
-          
-        } else {
-          // RESTAURAR - Mostrar conteúdo completo
-          this.body.style.display = '';
-          this.popup.style.width = `${this.originalWidth}px`;
-          this.popup.style.padding = `${this.originalPadding}px`;
-          this.popup.style.height = 'auto';
-          this.btnToggle.innerText = '–';
-          this.btnToggle.title = 'Minimizar';
-          
-          // Restaurar layout normal
-          const header = this.popup.querySelector('.tf-header');
-          if (header) {
-            const titleEl = header.querySelector('div:first-child');
-            const controlsEl = header.querySelector('div:last-child');
-            
-            // Mostrar texto novamente
-            if (titleEl) {
-              const textElements = titleEl.querySelectorAll('div > div');
-              if (textElements.length > 1) {
-                textElements[1].style.display = ''; // Mostra o texto
-              }
-            }
-            
-            // Mostrar dark mode button
-            if (controlsEl) {
-              const darkBtn = controlsEl.querySelector('button:first-child');
-              if (darkBtn) {
-                darkBtn.style.display = '';
-              }
-            }
-            
-            header.style.justifyContent = 'space-between';
-            header.style.gap = `${Utils.getSize(12)}px`;
-            header.style.marginBottom = `${Utils.getSize(16)}px`;
-            header.style.paddingBottom = `${Utils.getSize(12)}px`;
-            header.style.borderBottom = `1px solid ${StateManager.getState().currentMode === 'dark' ? CONFIG.darkModeColors.border : CONFIG.lightModeColors.border}`;
-          }
-          
-          // Mostra marca d'água quando restaurado
-          FPSTracker.toggleVisibility(true);
-        }
-      });
-
+      // Botão Modo Claro/Escuro
       window.darkModeBtn.addEventListener('click', () => {
         ThemeManager.toggleModoEscuro();
       });
 
-      this.infoBtn.addEventListener('click', () => {
+      // Botão Prompt IA
+      this.promptBtn.addEventListener('click', () => {
         Utils.safeExecute(() => {
+          // Primeiro captura as informações
           const info = InfoCapture.capturarInformacoes();
           
-          if (info.tema && !this.titleInput.value) {
-            this.titleInput.value = info.tema;
-          }
-          
-          WordCounter.updateWordCounter();
-          
-          console.log('=== INFORMAÇÕES CAPTURADAS ===');
-          console.log('Gênero:', info.gênero || 'Não encontrado');
-          console.log('Tema:', info.tema || 'Não encontrado');
-          console.log('Número de palavras:', info['número de palavras'] || 'Não encontrado');
-          console.log('Word Goal definido para:', StateManager.getState().wordGoal);
-          console.log('==============================');
-          
           if (info.tema || info.gênero) {
-            ToastSystem.show(
-              `📋 Informações capturadas! Tema: ${info.tema || 'Não encontrado'}`,
-              4000
-            );
+            InfoCapture.copiarPromptParaAreaTransferencia();
           } else {
-            ToastSystem.show('❌ Nenhuma informação encontrada. Verifique se está na página correta.', 4000);
+            ToastSystem.show('ℹ️ Nenhuma informação encontrada. Verifique se está na página de redação.', 3000);
           }
-        }, 'Erro ao capturar informações');
+        }, 'Erro ao criar prompt');
       });
-
-      this.copyPromptBtn.addEventListener('click', () => {
-        const state = StateManager.getState();
-        if (!state.capturedInfo.gênero && !state.capturedInfo.tema) {
-          ToastSystem.show('ℹ️ Nenhuma informação capturada. Clique em "Capturar Info" primeiro.', 3000);
-        } else {
-          InfoCapture.copiarPromptParaAreaTransferencia();
-        }
-      });
-
-      this.sendBtn.addEventListener('click', async () => {
-        await Utils.safeExecute(async () => {
-          const title = this.titleInput.value || '';
-          const text = window.popupTextarea.value || '';
-
-          if (!text.trim() && !title.trim()) {
-            ToastSystem.show('❌ Digite título ou texto antes de enviar.', 4000);
-            return;
-          }
-
-          function findVisibleTextarea() {
-            const all = Array.from(document.querySelectorAll('textarea'));
-            const visible = all.find(t => t.getAttribute('aria-hidden') !== 'true' && t.offsetParent !== null);
-            if (visible) return visible;
-            return document.querySelector('textarea[placeholder*="Comece"], textarea') || null;
-          }
-
-          function findContentEditable() {
-            return document.querySelector('[contenteditable="true"]');
-          }
-
-          let target = findVisibleTextarea() || findContentEditable();
-          if (!target) {
-            ToastSystem.show('❌ Campo da redação não encontrado. Abra a página onde você escreve a redação.', 5000);
-            return;
-          }
-
-          const titleField = document.querySelector('input[type="text"], input[id*="title" i], input[placeholder*="tít" i]');
-
-          window.progressBar.style.width = '0%';
-          
-          if (titleField && title.trim()) {
-            await TypingEngine.typeToElement(titleField, title);
-          }
-          
-          await TypingEngine.typeToElement(target, text);
-          
-          ToastSystem.show('✅ Digitação concluída com sucesso!', 3000);
-        }, 'Erro ao enviar texto');
-      });
-
-      window.popupTextarea.addEventListener('input', WordCounter.debouncedUpdate);
     },
 
     setupResponsiveBehavior() {
@@ -1347,7 +787,7 @@
           this.popup.style.right = '20px';
           this.popup.style.bottom = '20px';
         } else {
-          this.popup.style.width = `${this.originalWidth}px`;
+          this.popup.style.width = '300px';
           this.popup.style.right = '20px';
           this.popup.style.left = 'auto';
         }
@@ -1355,18 +795,6 @@
       
       mediaQuery.addListener(handleMobileChange);
       handleMobileChange(mediaQuery);
-    },
-
-    enhanceAccessibility() {
-      this.popup.setAttribute('role', 'dialog');
-      this.popup.setAttribute('aria-label', 'Type Flow - Ferramenta de Redação');
-      this.popup.setAttribute('aria-modal', 'true');
-      
-      this.popup.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          this.btnToggle.click();
-        }
-      });
     }
   };
 
@@ -1401,6 +829,7 @@
     await Utils.delay(1000);
     
     PopupManager.init();
+    PasteUnlocker.init(); // Inicializar desbloqueio de colagem
     ThemeManager.ativarModoEscuroUniversal();
     FPSTracker.init();
     CleanupManager.init();
@@ -1429,10 +858,7 @@
     ToastSystem.show('🌿 Type Flow carregado com sucesso!', 3000);
     
     await Utils.delay(1000);
-    ToastSystem.show(`⭐ Bem-vindo ao Type Flow!`, 3000);
-    
-    await Utils.delay(500);
-    ToastSystem.show(`🚀 Ferramenta de Redação Avançada`, 3000);
+    ToastSystem.show(`🔓 Colagem desbloqueada automaticamente`, 3000);
 
     // Esconder splash screen
     await Utils.delay(1000);
@@ -1440,7 +866,7 @@
     
     StateManager.setState({ splashShown: true });
 
-    console.log(`🚀 Type Flow carregado com sucesso! (${isMobile ? 'Mobile 60%' : 'PC 85%'})`);
+    console.log(`🚀 Type Flow carregado com sucesso! (${isMobile ? 'Mobile' : 'PC'})`);
   }
 
   init();
