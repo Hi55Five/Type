@@ -566,6 +566,143 @@
     }
   };
 
+  // ========== SISTEMA DE DOAÇÃO ==========
+  const DonationSystem = {
+    init() {
+      this.createDonationPopup();
+    },
+
+    createDonationPopup() {
+      // Criar overlay do popup de doação
+      const donationOverlay = document.createElement('div');
+      donationOverlay.id = 'typeflow-donation-overlay';
+      donationOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000003;
+        backdrop-filter: blur(5px);
+      `;
+
+      // Criar popup de doação
+      const donationPopup = document.createElement('div');
+      donationPopup.id = 'typeflow-donation-popup';
+      donationPopup.style.cssText = `
+        background: ${CONFIG.darkModeColors.surface};
+        color: ${CONFIG.darkModeColors.text};
+        padding: ${Utils.getSize(24)}px;
+        border-radius: ${Utils.getSize(16)}px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        border: 1px solid ${CONFIG.darkModeColors.border};
+        max-width: ${Utils.getSize(400)}px;
+        width: 90%;
+        text-align: center;
+        font-family: 'Inter', system-ui, sans-serif;
+        position: relative;
+      `;
+
+      donationPopup.innerHTML = `
+        <div style="margin-bottom: ${Utils.getSize(16)}px;">
+          <div style="font-size: ${Utils.getSize(48)}px; margin-bottom: ${Utils.getSize(16)}px;">❤️</div>
+          <h3 style="color: ${CONFIG.darkModeColors.textImportant}; margin-bottom: ${Utils.getSize(12)}px; font-size: ${Utils.getSize(20)}px;">
+            Apoie o Type Flow
+          </h3>
+          <p style="color: ${CONFIG.darkModeColors.textLight}; line-height: 1.5; margin-bottom: ${Utils.getSize(20)}px;">
+            Sua doação será usada para desbloquear outras plataformas e continuar desenvolvendo ferramentas incríveis!
+          </p>
+          <div style="background: ${CONFIG.darkModeColors.card}; padding: ${Utils.getSize(16)}px; border-radius: ${Utils.getSize(12)}px; margin-bottom: ${Utils.getSize(20)}px;">
+            <p style="margin-bottom: ${Utils.getSize(8)}px; color: ${CONFIG.darkModeColors.textLight}; font-size: ${Utils.getSize(14)}px;">Chave PIX:</p>
+            <div style="display: flex; align-items: center; justify-content: center; gap: ${Utils.getSize(8)}px;">
+              <code style="background: rgba(255,255,255,0.1); padding: ${Utils.getSize(8)}px ${Utils.getSize(12)}px; border-radius: ${Utils.getSize(8)}px; font-family: 'Courier New', monospace; font-size: ${Utils.getSize(14)}px; color: ${CONFIG.darkModeColors.textImportant};">
+                exploit.parana@gmail.com
+              </code>
+              <button id="copy-pix-btn" style="background: ${CONFIG.darkModeColors.primary}; border: none; color: white; padding: ${Utils.getSize(8)}px; border-radius: ${Utils.getSize(8)}px; cursor: pointer; font-size: ${Utils.getSize(14)}px;">
+                Copiar
+              </button>
+            </div>
+          </div>
+          <button id="close-donation-btn" style="background: ${CONFIG.darkModeColors.border}; border: none; color: ${CONFIG.darkModeColors.text}; padding: ${Utils.getSize(12)}px ${Utils.getSize(24)}px; border-radius: ${Utils.getSize(8)}px; cursor: pointer; font-size: ${Utils.getSize(14)}px; transition: all 0.2s ease;">
+            Fechar
+          </button>
+        </div>
+      `;
+
+      donationOverlay.appendChild(donationPopup);
+      document.body.appendChild(donationOverlay);
+
+      // Configurar eventos
+      document.getElementById('copy-pix-btn').addEventListener('click', () => {
+        this.copyPixToClipboard();
+      });
+
+      document.getElementById('close-donation-btn').addEventListener('click', () => {
+        this.hideDonationPopup();
+      });
+
+      donationOverlay.addEventListener('click', (e) => {
+        if (e.target === donationOverlay) {
+          this.hideDonationPopup();
+        }
+      });
+
+      this.donationOverlay = donationOverlay;
+    },
+
+    showDonationPopup() {
+      if (this.donationOverlay) {
+        this.donationOverlay.style.display = 'flex';
+      }
+    },
+
+    hideDonationPopup() {
+      if (this.donationOverlay) {
+        this.donationOverlay.style.display = 'none';
+      }
+    },
+
+    async copyPixToClipboard() {
+      const pixKey = 'exploit.parana@gmail.com';
+      
+      try {
+        await navigator.clipboard.writeText(pixKey);
+        ToastSystem.show('✅ PIX copiado para a área de transferência!', 3000);
+        
+        // Atualizar texto do botão temporariamente
+        const copyBtn = document.getElementById('copy-pix-btn');
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copiado!';
+        copyBtn.style.background = CONFIG.darkModeColors.success;
+        
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+          copyBtn.style.background = CONFIG.darkModeColors.primary;
+        }, 2000);
+        
+      } catch (err) {
+        // Fallback para navegadores mais antigos
+        const textArea = document.createElement('textarea');
+        textArea.value = pixKey;
+        document.body.appendChild(textArea);
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+          ToastSystem.show('✅ PIX copiado para a área de transferência!', 3000);
+        } catch (fallbackErr) {
+          ToastSystem.show('❌ Erro ao copiar PIX. Aqui está a chave: ' + pixKey, 5000);
+        }
+        
+        document.body.removeChild(textArea);
+      }
+    }
+  };
+
   // ========== SISTEMA DE ARRASTAR ==========
   class DragManager {
     constructor(element) {
@@ -640,7 +777,7 @@
       const state = StateManager.getState();
       const colors = state.currentMode === 'dark' ? CONFIG.darkModeColors : CONFIG.lightModeColors;
 
-      const currentWidth = Utils.getSize(300); // Largura para 3 elementos
+      const currentWidth = Utils.getSize(350); // Aumentei a largura para 4 elementos
       const currentPadding = Utils.getSize(16);
       const currentBorderRadius = Utils.getSize(16);
 
@@ -696,6 +833,25 @@
       const controlsContainer = document.createElement('div');
       controlsContainer.style.cssText = `display: flex; gap: ${Utils.getSize(8)}px; align-items: center;`;
       
+      // Botão Doação
+      const donationBtn = document.createElement('button');
+      donationBtn.innerHTML = '❤️';
+      donationBtn.title = 'Fazer uma doação';
+      donationBtn.style.cssText = `
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        border: none;
+        color: white;
+        font-size: ${Utils.getSize(16)}px;
+        cursor: pointer;
+        width: ${Utils.getSize(36)}px;
+        height: ${Utils.getSize(36)}px;
+        border-radius: ${Utils.getSize(10)}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      `;
+      
       // Botão Prompt IA
       const promptBtn = document.createElement('button');
       promptBtn.innerHTML = '🤖';
@@ -735,6 +891,7 @@
         backdrop-filter: blur(10px);
       `;
       
+      controlsContainer.appendChild(donationBtn);
       controlsContainer.appendChild(promptBtn);
       controlsContainer.appendChild(window.darkModeBtn);
       header.appendChild(titleEl);
@@ -742,7 +899,7 @@
       popup.appendChild(header);
 
       // Efeitos hover
-      [promptBtn, window.darkModeBtn].forEach(btn => {
+      [donationBtn, promptBtn, window.darkModeBtn].forEach(btn => {
         btn.addEventListener('mouseenter', function() {
           this.style.transform = 'scale(1.1)';
           this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
@@ -753,6 +910,7 @@
         });
       });
 
+      this.donationBtn = donationBtn;
       this.promptBtn = promptBtn;
     },
 
@@ -775,6 +933,11 @@
           }
         }, 'Erro ao criar prompt');
       });
+
+      // Botão Doação
+      this.donationBtn.addEventListener('click', () => {
+        DonationSystem.showDonationPopup();
+      });
     },
 
     setupResponsiveBehavior() {
@@ -787,7 +950,7 @@
           this.popup.style.right = '20px';
           this.popup.style.bottom = '20px';
         } else {
-          this.popup.style.width = '300px';
+          this.popup.style.width = '350px';
           this.popup.style.right = '20px';
           this.popup.style.left = 'auto';
         }
@@ -813,6 +976,10 @@
         if (fpsElement) {
           fpsElement.remove();
         }
+        const donationOverlay = document.getElementById('typeflow-donation-overlay');
+        if (donationOverlay) {
+          donationOverlay.remove();
+        }
       };
       
       window.addEventListener('beforeunload', cleanup);
@@ -830,6 +997,7 @@
     
     PopupManager.init();
     PasteUnlocker.init(); // Inicializar desbloqueio de colagem
+    DonationSystem.init(); // Inicializar sistema de doação
     ThemeManager.ativarModoEscuroUniversal();
     FPSTracker.init();
     CleanupManager.init();
