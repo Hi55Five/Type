@@ -37,6 +37,105 @@
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const popupSize = isMobile ? 0.6 : 0.85; // 60% mobile, 85% PC
 
+  // ========== SISTEMA DE WIDGETS LIVEPIX ==========
+  const LivePixWidgets = {
+    widgets: {
+      donation: {
+        id: 'e469d696-eab2-4c3f-9154-058e42a56b08',
+        container: 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9998;width:min(400px,95vw);overflow:hidden;background:transparent;pointer-events:none',
+        iframe: 'width:800px;height:400px;border:none;transform:scale(0.5);transform-origin:top left;background:transparent;color-scheme:normal !important;pointer-events:none'
+      },
+      qr: {
+        id: '0468d92a-238e-4720-abdf-75167b5c59d6',
+        container: 'position:fixed;bottom:60px;right:0px;z-index:9998;height:225px;overflow:hidden;background:transparent;pointer-events:none',
+        iframe: 'width:400px;height:600px;border:none;transform:scale(0.45);transform-origin:top right;background:transparent;color-scheme:normal !important;pointer-events:none'
+      },
+      donators: {
+        id: '36e12ce5-53b0-4d75-81bb-310e9d9023e0',
+        container: 'position:fixed;top:50px;left:20px;z-index:9998;width:200px;overflow:hidden;background:transparent;pointer-events:none',
+        iframe: 'width:300px;height:150px;border:none;transform:scale(0.5);transform-origin:top left;background:transparent;color-scheme:normal !important;pointer-events:none'
+      }
+    },
+
+    init() {
+      this.createWidgets();
+      this.setupEventListeners();
+    },
+
+    createWidgets() {
+      // Criar widget de doação (sempre)
+      const donationContainer = this.createWidget(this.widgets.donation);
+      donationContainer.id = 'livepix-donation';
+      document.body.appendChild(donationContainer);
+      this.donationContainer = donationContainer;
+
+      // Criar QR Code e Donators apenas se não for mobile
+      if (!isMobile) {
+        const qrContainer = this.createWidget(this.widgets.qr);
+        qrContainer.id = 'livepix-qr';
+        document.body.appendChild(qrContainer);
+        this.qrContainer = qrContainer;
+
+        const donatorsContainer = this.createWidget(this.widgets.donators);
+        donatorsContainer.id = 'livepix-donators';
+        document.body.appendChild(donatorsContainer);
+        this.donatorsContainer = donatorsContainer;
+      }
+    },
+
+    createWidget(config) {
+      const container = document.createElement('div');
+      container.style.cssText = config.container;
+      
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://widget.livepix.gg/embed/${config.id}`;
+      iframe.style.cssText = config.iframe;
+      iframe.allowTransparency = true;
+      iframe.allow = 'autoplay; encrypted-media';
+      
+      container.appendChild(iframe);
+      return container;
+    },
+
+    setupEventListeners() {
+      // Observador para ajustar posição do QR Code em páginas de perfil
+      const observer = new MutationObserver(() => {
+        if (this.qrContainer) {
+          const isProfilePage = window.location.pathname.includes('/profile');
+          this.qrContainer.style.bottom = isProfilePage ? '0px' : '60px';
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true
+      });
+
+      // Simular o evento domChanged do plppdo
+      if (window.plppdo) {
+        window.plppdo.on('domChanged', () => {
+          if (this.qrContainer) {
+            const isProfilePage = window.location.pathname.includes('/profile');
+            this.qrContainer.style.bottom = isProfilePage ? '0px' : '60px';
+          }
+        });
+      }
+    },
+
+    toggleWidgets(show) {
+      const widgets = [
+        this.donationContainer,
+        this.qrContainer,
+        this.donatorsContainer
+      ].filter(widget => widget);
+
+      widgets.forEach(widget => {
+        widget.style.display = show ? 'block' : 'none';
+      });
+    }
+  };
+
   // ========== SISTEMA DE SPLASH SCREEN ==========
   const SplashScreen = {
     show() {
@@ -181,6 +280,7 @@
       if (message.includes('⭐') || message.includes('bem-vindo')) return '⭐';
       if (message.includes('🚀')) return '🚀';
       if (message.includes('🌿')) return '🌿';
+      if (message.includes('🎁')) return '🎁';
       return 'ℹ️';
     }
   };
@@ -210,7 +310,7 @@
         border-radius: 6px;
         font-family: 'Courier New', monospace;
         font-size: 12px;
-        z-index: 999998;
+        z-index: 999997;
         backdrop-filter: blur(10px);
         border: 1px solid #00ff00;
         transition: all 0.3s ease;
@@ -270,7 +370,8 @@
       isTyping: false,
       typingQueue: [],
       isMinimized: false,
-      splashShown: false
+      splashShown: false,
+      widgetsVisible: true
     },
     
     setState(newState) {
@@ -566,143 +667,6 @@
     }
   };
 
-  // ========== SISTEMA DE DOAÇÃO ==========
-  const DonationSystem = {
-    init() {
-      this.createDonationPopup();
-    },
-
-    createDonationPopup() {
-      // Criar overlay do popup de doação
-      const donationOverlay = document.createElement('div');
-      donationOverlay.id = 'typeflow-donation-overlay';
-      donationOverlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0, 0, 0, 0.7);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000003;
-        backdrop-filter: blur(5px);
-      `;
-
-      // Criar popup de doação
-      const donationPopup = document.createElement('div');
-      donationPopup.id = 'typeflow-donation-popup';
-      donationPopup.style.cssText = `
-        background: ${CONFIG.darkModeColors.surface};
-        color: ${CONFIG.darkModeColors.text};
-        padding: ${Utils.getSize(24)}px;
-        border-radius: ${Utils.getSize(16)}px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        border: 1px solid ${CONFIG.darkModeColors.border};
-        max-width: ${Utils.getSize(400)}px;
-        width: 90%;
-        text-align: center;
-        font-family: 'Inter', system-ui, sans-serif;
-        position: relative;
-      `;
-
-      donationPopup.innerHTML = `
-        <div style="margin-bottom: ${Utils.getSize(16)}px;">
-          <div style="font-size: ${Utils.getSize(48)}px; margin-bottom: ${Utils.getSize(16)}px;">❤️</div>
-          <h3 style="color: ${CONFIG.darkModeColors.textImportant}; margin-bottom: ${Utils.getSize(12)}px; font-size: ${Utils.getSize(20)}px;">
-            Apoie o Type Flow
-          </h3>
-          <p style="color: ${CONFIG.darkModeColors.textLight}; line-height: 1.5; margin-bottom: ${Utils.getSize(20)}px;">
-            Sua doação será usada para desbloquear outras plataformas e continuar desenvolvendo ferramentas incríveis!
-          </p>
-          <div style="background: ${CONFIG.darkModeColors.card}; padding: ${Utils.getSize(16)}px; border-radius: ${Utils.getSize(12)}px; margin-bottom: ${Utils.getSize(20)}px;">
-            <p style="margin-bottom: ${Utils.getSize(8)}px; color: ${CONFIG.darkModeColors.textLight}; font-size: ${Utils.getSize(14)}px;">Chave PIX:</p>
-            <div style="display: flex; align-items: center; justify-content: center; gap: ${Utils.getSize(8)}px;">
-              <code style="background: rgba(255,255,255,0.1); padding: ${Utils.getSize(8)}px ${Utils.getSize(12)}px; border-radius: ${Utils.getSize(8)}px; font-family: 'Courier New', monospace; font-size: ${Utils.getSize(14)}px; color: ${CONFIG.darkModeColors.textImportant};">
-                exploit.parana@gmail.com
-              </code>
-              <button id="copy-pix-btn" style="background: ${CONFIG.darkModeColors.primary}; border: none; color: white; padding: ${Utils.getSize(8)}px; border-radius: ${Utils.getSize(8)}px; cursor: pointer; font-size: ${Utils.getSize(14)}px;">
-                Copiar
-              </button>
-            </div>
-          </div>
-          <button id="close-donation-btn" style="background: ${CONFIG.darkModeColors.border}; border: none; color: ${CONFIG.darkModeColors.text}; padding: ${Utils.getSize(12)}px ${Utils.getSize(24)}px; border-radius: ${Utils.getSize(8)}px; cursor: pointer; font-size: ${Utils.getSize(14)}px; transition: all 0.2s ease;">
-            Fechar
-          </button>
-        </div>
-      `;
-
-      donationOverlay.appendChild(donationPopup);
-      document.body.appendChild(donationOverlay);
-
-      // Configurar eventos
-      document.getElementById('copy-pix-btn').addEventListener('click', () => {
-        this.copyPixToClipboard();
-      });
-
-      document.getElementById('close-donation-btn').addEventListener('click', () => {
-        this.hideDonationPopup();
-      });
-
-      donationOverlay.addEventListener('click', (e) => {
-        if (e.target === donationOverlay) {
-          this.hideDonationPopup();
-        }
-      });
-
-      this.donationOverlay = donationOverlay;
-    },
-
-    showDonationPopup() {
-      if (this.donationOverlay) {
-        this.donationOverlay.style.display = 'flex';
-      }
-    },
-
-    hideDonationPopup() {
-      if (this.donationOverlay) {
-        this.donationOverlay.style.display = 'none';
-      }
-    },
-
-    async copyPixToClipboard() {
-      const pixKey = 'exploit.parana@gmail.com';
-      
-      try {
-        await navigator.clipboard.writeText(pixKey);
-        ToastSystem.show('✅ PIX copiado para a área de transferência!', 3000);
-        
-        // Atualizar texto do botão temporariamente
-        const copyBtn = document.getElementById('copy-pix-btn');
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = 'Copiado!';
-        copyBtn.style.background = CONFIG.darkModeColors.success;
-        
-        setTimeout(() => {
-          copyBtn.textContent = originalText;
-          copyBtn.style.background = CONFIG.darkModeColors.primary;
-        }, 2000);
-        
-      } catch (err) {
-        // Fallback para navegadores mais antigos
-        const textArea = document.createElement('textarea');
-        textArea.value = pixKey;
-        document.body.appendChild(textArea);
-        textArea.select();
-        
-        try {
-          document.execCommand('copy');
-          ToastSystem.show('✅ PIX copiado para a área de transferência!', 3000);
-        } catch (fallbackErr) {
-          ToastSystem.show('❌ Erro ao copiar PIX. Aqui está a chave: ' + pixKey, 5000);
-        }
-        
-        document.body.removeChild(textArea);
-      }
-    }
-  };
-
   // ========== SISTEMA DE ARRASTAR ==========
   class DragManager {
     constructor(element) {
@@ -777,7 +741,7 @@
       const state = StateManager.getState();
       const colors = state.currentMode === 'dark' ? CONFIG.darkModeColors : CONFIG.lightModeColors;
 
-      const currentWidth = Utils.getSize(350); // Aumentei a largura para 4 elementos
+      const currentWidth = Utils.getSize(350);
       const currentPadding = Utils.getSize(16);
       const currentBorderRadius = Utils.getSize(16);
 
@@ -785,7 +749,7 @@
       popup.id = 'typeflow-popup';
       popup.style.cssText = `
         position: fixed;
-        bottom: 20px;
+        top: 20px;
         right: 20px;
         width: ${currentWidth}px;
         background: ${colors.surface};
@@ -836,7 +800,7 @@
       // Botão Doação
       const donationBtn = document.createElement('button');
       donationBtn.innerHTML = '❤️';
-      donationBtn.title = 'Fazer uma doação';
+      donationBtn.title = 'Apoiar o projeto - Widgets ativos';
       donationBtn.style.cssText = `
         background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
         border: none;
@@ -890,16 +854,36 @@
         transition: all 0.2s ease;
         backdrop-filter: blur(10px);
       `;
+
+      // Botão Toggle Widgets
+      const widgetsBtn = document.createElement('button');
+      widgetsBtn.innerHTML = '🎁';
+      widgetsBtn.title = 'Mostrar/ocultar widgets de doação';
+      widgetsBtn.style.cssText = `
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        font-size: ${Utils.getSize(16)}px;
+        cursor: pointer;
+        width: ${Utils.getSize(36)}px;
+        height: ${Utils.getSize(36)}px;
+        border-radius: ${Utils.getSize(10)}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      `;
       
       controlsContainer.appendChild(donationBtn);
       controlsContainer.appendChild(promptBtn);
       controlsContainer.appendChild(window.darkModeBtn);
+      controlsContainer.appendChild(widgetsBtn);
       header.appendChild(titleEl);
       header.appendChild(controlsContainer);
       popup.appendChild(header);
 
       // Efeitos hover
-      [donationBtn, promptBtn, window.darkModeBtn].forEach(btn => {
+      [donationBtn, promptBtn, window.darkModeBtn, widgetsBtn].forEach(btn => {
         btn.addEventListener('mouseenter', function() {
           this.style.transform = 'scale(1.1)';
           this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
@@ -912,6 +896,7 @@
 
       this.donationBtn = donationBtn;
       this.promptBtn = promptBtn;
+      this.widgetsBtn = widgetsBtn;
     },
 
     setupEventListeners() {
@@ -934,9 +919,21 @@
         }, 'Erro ao criar prompt');
       });
 
-      // Botão Doação
+      // Botão Doação - Mostra informações
       this.donationBtn.addEventListener('click', () => {
-        DonationSystem.showDonationPopup();
+        ToastSystem.show('❤️ Widgets de doação ativos! Use o botão 🎁 para controlar.', 3000);
+      });
+
+      // Botão Toggle Widgets
+      this.widgetsBtn.addEventListener('click', () => {
+        const state = StateManager.getState();
+        const newVisibility = !state.widgetsVisible;
+        
+        StateManager.setState({ widgetsVisible: newVisibility });
+        LivePixWidgets.toggleWidgets(newVisibility);
+        
+        this.widgetsBtn.title = newVisibility ? 'Ocultar widgets de doação' : 'Mostrar widgets de doação';
+        ToastSystem.show(newVisibility ? '🎁 Widgets de doação visíveis' : '🎁 Widgets de doação ocultos', 2000);
       });
     },
 
@@ -948,11 +945,14 @@
           this.popup.style.width = 'calc(100vw - 40px)';
           this.popup.style.left = '20px';
           this.popup.style.right = '20px';
-          this.popup.style.bottom = '20px';
+          this.popup.style.top = '20px';
+          this.popup.style.bottom = 'auto';
         } else {
           this.popup.style.width = '350px';
           this.popup.style.right = '20px';
           this.popup.style.left = 'auto';
+          this.popup.style.top = '20px';
+          this.popup.style.bottom = 'auto';
         }
       };
       
@@ -976,9 +976,17 @@
         if (fpsElement) {
           fpsElement.remove();
         }
-        const donationOverlay = document.getElementById('typeflow-donation-overlay');
-        if (donationOverlay) {
-          donationOverlay.remove();
+        const donationWidget = document.getElementById('livepix-donation');
+        if (donationWidget) {
+          donationWidget.remove();
+        }
+        const qrWidget = document.getElementById('livepix-qr');
+        if (qrWidget) {
+          qrWidget.remove();
+        }
+        const donatorsWidget = document.getElementById('livepix-donators');
+        if (donatorsWidget) {
+          donatorsWidget.remove();
         }
       };
       
@@ -997,7 +1005,7 @@
     
     PopupManager.init();
     PasteUnlocker.init(); // Inicializar desbloqueio de colagem
-    DonationSystem.init(); // Inicializar sistema de doação
+    LivePixWidgets.init(); // Inicializar sistema LivePix
     ThemeManager.ativarModoEscuroUniversal();
     FPSTracker.init();
     CleanupManager.init();
@@ -1027,6 +1035,9 @@
     
     await Utils.delay(1000);
     ToastSystem.show(`🔓 Colagem desbloqueada automaticamente`, 3000);
+
+    await Utils.delay(1000);
+    ToastSystem.show(`🎁 Sistema de doações LivePix ativo!`, 3000);
 
     // Esconder splash screen
     await Utils.delay(1000);
