@@ -1,32 +1,32 @@
 (function() {
   // ========== CONFIGURAÇÕES GLOBAIS ==========
-  const CONFIG = {
-    typingDelay: 0.001,
-    darkModeColors: {
-      background: '#0f0f23',
-      surface: '#1a1a2e',
-      card: '#16213e',
-      text: '#e6e6ff',
-      textLight: '#a0a0cc',
-      textImportant: '#ffffff',
-      primary: '#6366f1',
-      success: '#10b981',
-      accent: '#f59e0b',
-      border: '#2d2d5a',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+  const CONFIGURACOES = {
+    atrasoDigitacao: 0.001,
+    coresModoEscuro: {
+      fundo: '#0f0f23',
+      superficie: '#1a1a2e',
+      cartao: '#16213e',
+      texto: '#e6e6ff',
+      textoClaro: '#a0a0cc',
+      textoImportante: '#ffffff',
+      primaria: '#6366f1',
+      sucesso: '#10b981',
+      destaque: '#f59e0b',
+      borda: '#2d2d5a',
+      gradiente: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     },
-    lightModeColors: {
-      background: '#ffffff',
-      surface: '#f8fafc',
-      card: '#ffffff',
-      text: '#334155',
-      textLight: '#64748b',
-      textImportant: '#0f172a',
-      primary: '#3b82f6',
-      success: '#10b981',
-      accent: '#f59e0b',
-      border: '#e2e8f0',
-      gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+    coresModoClaro: {
+      fundo: '#ffffff',
+      superficie: '#f8fafc',
+      cartao: '#ffffff',
+      texto: '#334155',
+      textoClaro: '#64748b',
+      textoImportante: '#0f172a',
+      primaria: '#3b82f6',
+      sucesso: '#10b981',
+      destaque: '#f59e0b',
+      borda: '#e2e8f0',
+      gradiente: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
     }
   };
 
@@ -34,13 +34,170 @@
   if (document.getElementById('typeflow-popup')) return;
 
   // ========== DETECÇÃO DE DISPOSITIVO ==========
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const popupSize = isMobile ? 0.6 : 0.85; // 60% mobile, 85% PC
+  const ehMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const tamanhoPopup = ehMobile ? 0.6 : 0.85; // 60% mobile, 85% PC
+
+  // ========== SISTEMA DE TUTORIAL ==========
+  const SistemaTutorial = {
+    passos: [
+      {
+        titulo: "Bem-vindo ao Type Flow!",
+        descricao: "Ferramenta de redação avançada com diversas funcionalidades para facilitar sua escrita.",
+        icone: "⭐"
+      },
+      {
+        titulo: "Botões Principais",
+        descricao: "❤️ - Widgets de doação ativos<br>🤖 - Criar prompt para IA<br>☀️/🌙 - Alternar tema<br>🎮 - Ver tutorial novamente",
+        icone: "🚀"
+      },
+      {
+        titulo: "Como usar o Prompt para IA",
+        descricao: "1. Acesse uma redação<br>2. Clique no botão 🤖<br>3. O prompt será copiado automaticamente<br>4. Cole em sua IA favorita",
+        icone: "🤖"
+      },
+      {
+        titulo: "Modo Escuro/Claro",
+        descricao: "Clique no botão ☀️/🌙 para alternar entre os temas. Sua preferência será salva.",
+        icone: "🎨"
+      },
+      {
+        titulo: "Sistema de Doações",
+        descricao: "Os widgets do LivePix estão sempre ativos para quem quiser apoiar o projeto.",
+        icone: "❤️"
+      },
+      {
+        titulo: "Desbloqueio de Colagem",
+        descricao: "A colagem (Ctrl+V) está automaticamente desbloqueada em todos os campos de texto.",
+        icone: "🔓"
+      }
+    ],
+
+    mostrarTutorial() {
+      const tutorial = document.createElement('div');
+      tutorial.id = 'typeflow-tutorial';
+      tutorial.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 15, 35, 0.95);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000000;
+        font-family: 'Inter', system-ui, sans-serif;
+        color: #e6e6ff;
+        backdrop-filter: blur(10px);
+      `;
+
+      let conteudoHTML = `
+        <div style="
+          background: ${CONFIGURACOES.coresModoEscuro.superficie};
+          border-radius: 16px;
+          padding: 30px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          border: 1px solid ${CONFIGURACOES.coresModoEscuro.borda};
+          box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        ">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="font-size: 28px; margin: 0; color: #ffffff;">📚 Tutorial Type Flow</h1>
+            <button id="fechar-tutorial" style="
+              background: none;
+              border: none;
+              color: #e6e6ff;
+              font-size: 24px;
+              cursor: pointer;
+              padding: 8px;
+              border-radius: 8px;
+              transition: background 0.2s;
+            ">×</button>
+          </div>
+      `;
+
+      this.passos.forEach((passo, index) => {
+        conteudoHTML += `
+          <div style="
+            background: ${CONFIGURACOES.coresModoEscuro.cartao};
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid ${CONFIGURACOES.coresModoEscuro.borda};
+          ">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+              <div style="
+                background: ${CONFIGURACOES.coresModoEscuro.gradiente};
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+              ">${passo.icone}</div>
+              <h3 style="margin: 0; font-size: 18px; color: #ffffff;">${passo.titulo}</h3>
+            </div>
+            <p style="margin: 0; color: #a0a0cc; line-height: 1.6;">${passo.descricao}</p>
+          </div>
+        `;
+      });
+
+      conteudoHTML += `
+          <div style="margin-top: 30px; text-align: center;">
+            <button id="iniciar-experiencia" style="
+              background: ${CONFIGURACOES.coresModoEscuro.gradiente};
+              color: white;
+              border: none;
+              padding: 12px 24px;
+              border-radius: 10px;
+              font-size: 16px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: transform 0.2s;
+            ">Começar a usar!</button>
+          </div>
+        </div>
+      `;
+
+      tutorial.innerHTML = conteudoHTML;
+      document.body.appendChild(tutorial);
+
+      // Event listeners do tutorial
+      document.getElementById('fechar-tutorial').addEventListener('click', () => {
+        this.fecharTutorial();
+      });
+
+      document.getElementById('iniciar-experiencia').addEventListener('click', () => {
+        this.fecharTutorial();
+      });
+
+      // Fechar com ESC
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          this.fecharTutorial();
+        }
+      });
+    },
+
+    fecharTutorial() {
+      const tutorial = document.getElementById('typeflow-tutorial');
+      if (tutorial && tutorial.parentNode) {
+        tutorial.style.opacity = '0';
+        setTimeout(() => {
+          tutorial.parentNode.removeChild(tutorial);
+        }, 300);
+      }
+    }
+  };
 
   // ========== SISTEMA DE WIDGETS LIVEPIX ==========
-  const LivePixWidgets = {
+  const WidgetsLivePix = {
     widgets: {
-      donation: {
+      doacao: {
         id: 'e469d696-eab2-4c3f-9154-058e42a56b08',
         container: 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9998;width:min(400px,95vw);overflow:hidden;background:transparent;pointer-events:none',
         iframe: 'width:800px;height:400px;border:none;transform:scale(0.5);transform-origin:top left;background:transparent;color-scheme:normal !important;pointer-events:none'
@@ -50,40 +207,40 @@
         container: 'position:fixed;bottom:60px;right:0px;z-index:9998;height:225px;overflow:hidden;background:transparent;pointer-events:none',
         iframe: 'width:400px;height:600px;border:none;transform:scale(0.45);transform-origin:top right;background:transparent;color-scheme:normal !important;pointer-events:none'
       },
-      donators: {
+      doadores: {
         id: '36e12ce5-53b0-4d75-81bb-310e9d9023e0',
         container: 'position:fixed;top:50px;left:20px;z-index:9998;width:200px;overflow:hidden;background:transparent;pointer-events:none',
         iframe: 'width:300px;height:150px;border:none;transform:scale(0.5);transform-origin:top left;background:transparent;color-scheme:normal !important;pointer-events:none'
       }
     },
 
-    init() {
-      this.createWidgets();
-      this.setupEventListeners();
+    iniciar() {
+      this.criarWidgets();
+      this.configurarEventListeners();
     },
 
-    createWidgets() {
+    criarWidgets() {
       // Criar widget de doação (sempre)
-      const donationContainer = this.createWidget(this.widgets.donation);
-      donationContainer.id = 'livepix-donation';
-      document.body.appendChild(donationContainer);
-      this.donationContainer = donationContainer;
+      const containerDoacao = this.criarWidget(this.widgets.doacao);
+      containerDoacao.id = 'livepix-doacao';
+      document.body.appendChild(containerDoacao);
+      this.containerDoacao = containerDoacao;
 
-      // Criar QR Code e Donators apenas se não for mobile
-      if (!isMobile) {
-        const qrContainer = this.createWidget(this.widgets.qr);
-        qrContainer.id = 'livepix-qr';
-        document.body.appendChild(qrContainer);
-        this.qrContainer = qrContainer;
+      // Criar QR Code e Doadores apenas se não for mobile
+      if (!ehMobile) {
+        const containerQR = this.criarWidget(this.widgets.qr);
+        containerQR.id = 'livepix-qr';
+        document.body.appendChild(containerQR);
+        this.containerQR = containerQR;
 
-        const donatorsContainer = this.createWidget(this.widgets.donators);
-        donatorsContainer.id = 'livepix-donators';
-        document.body.appendChild(donatorsContainer);
-        this.donatorsContainer = donatorsContainer;
+        const containerDoadores = this.criarWidget(this.widgets.doadores);
+        containerDoadores.id = 'livepix-doadores';
+        document.body.appendChild(containerDoadores);
+        this.containerDoadores = containerDoadores;
       }
     },
 
-    createWidget(config) {
+    criarWidget(config) {
       const container = document.createElement('div');
       container.style.cssText = config.container;
       
@@ -97,48 +254,26 @@
       return container;
     },
 
-    setupEventListeners() {
+    configurarEventListeners() {
       // Observador para ajustar posição do QR Code em páginas de perfil
-      const observer = new MutationObserver(() => {
-        if (this.qrContainer) {
-          const isProfilePage = window.location.pathname.includes('/profile');
-          this.qrContainer.style.bottom = isProfilePage ? '0px' : '60px';
+      const observador = new MutationObserver(() => {
+        if (this.containerQR) {
+          const ehPaginaPerfil = window.location.pathname.includes('/profile');
+          this.containerQR.style.bottom = ehPaginaPerfil ? '0px' : '60px';
         }
       });
 
-      observer.observe(document.body, {
+      observador.observe(document.body, {
         childList: true,
         subtree: true,
         attributes: true
-      });
-
-      // Simular o evento domChanged do plppdo
-      if (window.plppdo) {
-        window.plppdo.on('domChanged', () => {
-          if (this.qrContainer) {
-            const isProfilePage = window.location.pathname.includes('/profile');
-            this.qrContainer.style.bottom = isProfilePage ? '0px' : '60px';
-          }
-        });
-      }
-    },
-
-    toggleWidgets(show) {
-      const widgets = [
-        this.donationContainer,
-        this.qrContainer,
-        this.donatorsContainer
-      ].filter(widget => widget);
-
-      widgets.forEach(widget => {
-        widget.style.display = show ? 'block' : 'none';
       });
     }
   };
 
   // ========== SISTEMA DE SPLASH SCREEN ==========
-  const SplashScreen = {
-    show() {
+  const TelaSplash = {
+    mostrar() {
       const splash = document.createElement('div');
       splash.id = 'typeflow-splash';
       splash.style.cssText = `
@@ -147,71 +282,65 @@
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: ${CONFIG.darkModeColors.background};
+        background: ${CONFIGURACOES.coresModoEscuro.fundo};
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         z-index: 1000001;
         font-family: 'Inter', system-ui, sans-serif;
-        color: ${CONFIG.darkModeColors.text};
+        color: ${CONFIGURACOES.coresModoEscuro.texto};
         transition: opacity 0.5s ease;
       `;
 
       splash.innerHTML = `
         <div style="text-align: center; padding: 20px;">
           <div style="font-size: 48px; margin-bottom: 20px;">🌀</div>
-          <h1 style="font-size: 28px; margin-bottom: 10px; color: ${CONFIG.darkModeColors.textImportant};">
-            Type Flow
-          </h1>
-          <p style="color: ${CONFIG.darkModeColors.textLight}; margin-bottom: 30px;">
-            Ferramenta de Redação Avançada
-          </p>
+          <h1 style="font-size: 28px; margin-bottom: 10px; color: ${CONFIGURACOES.coresModoEscuro.textoImportante};">Type Flow</h1>
+          <p style="color: ${CONFIGURACOES.coresModoEscuro.textoClaro}; margin-bottom: 30px;">Ferramenta de Redação Avançada</p>
           <div style="
             width: 60px;
             height: 4px;
-            background: ${CONFIG.darkModeColors.gradient};
+            background: ${CONFIGURACOES.coresModoEscuro.gradiente};
             border-radius: 2px;
             margin: 0 auto;
             position: relative;
             overflow: hidden;
           ">
-            <div id="splash-progress" style="
+            <div id="progresso-splash" style="
               position: absolute;
               top: 0;
               left: 0;
               height: 100%;
-              background: ${CONFIG.darkModeColors.primary};
+              background: ${CONFIGURACOES.coresModoEscuro.primaria};
               width: 0%;
               transition: width 0.3s ease;
             "></div>
           </div>
-          <p style="color: ${CONFIG.darkModeColors.textLight}; font-size: 12px; margin-top: 20px;">
-            Carregando recursos...
-          </p>
+          <p style="color: ${CONFIGURACOES.coresModoEscuro.textoClaro}; font-size: 12px; margin-top: 20px;">Carregando recursos...</p>
         </div>
       `;
 
       document.body.appendChild(splash);
       this.splash = splash;
-      this.animateProgress();
+      this.animarProgresso();
     },
 
-    animateProgress() {
-      const progress = document.getElementById('splash-progress');
-      let width = 0;
+    animarProgresso() {
+      const progresso = document.getElementById('progresso-splash');
+      let largura = 0;
       
-      const interval = setInterval(() => {
-        width += Math.random() * 15;
-        if (width >= 100) {
-          width = 100;
-          clearInterval(interval);
+      const intervalo = setInterval(() => {
+        largura += Math.random() * 15;
+        if (largura >= 100) {
+          largura = 100;
+          clearInterval(intervalo);
         }
-        progress.style.width = width + '%';
+        progresso.style.width = largura + '%';
       }, 200);
     },
 
-    hide() {
+    esconder() {
       if (this.splash) {
         this.splash.style.opacity = '0';
         setTimeout(() => {
@@ -223,20 +352,20 @@
     }
   };
 
-  // ========== SISTEMA DE TOAST ==========
-  const ToastSystem = {
-    show(message, duration = 3000, position = 'top') {
-      const toast = document.createElement('div');
-      toast.style.cssText = `
+  // ========== SISTEMA DE NOTIFICAÇÕES ==========
+  const SistemaNotificacoes = {
+    mostrar(mensagem, duracao = 3000, posicao = 'top') {
+      const notificacao = document.createElement('div');
+      notificacao.style.cssText = `
         position: fixed;
-        ${position === 'top' ? 'top: 20px' : 'bottom: 20px'};
+        ${posicao === 'top' ? 'top: 20px' : 'bottom: 20px'};
         left: 50%;
         transform: translateX(-50%) translateY(-20px);
-        background: ${CONFIG.darkModeColors.surface};
-        color: ${CONFIG.darkModeColors.text};
+        background: ${CONFIGURACOES.coresModoEscuro.superficie};
+        color: ${CONFIGURACOES.coresModoEscuro.texto};
         padding: 12px 20px;
         border-radius: 12px;
-        border: 1px solid ${CONFIG.darkModeColors.border};
+        border: 1px solid ${CONFIGURACOES.coresModoEscuro.borda};
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         z-index: 1000002;
         opacity: 0;
@@ -249,58 +378,59 @@
         gap: 8px;
       `;
 
-      toast.innerHTML = `
-        <span>${this.getIcon(message)}</span>
-        <span>${message}</span>
+      notificacao.innerHTML = `
+        <span>${this.obterIcone(mensagem)}</span>
+        <span>${mensagem}</span>
       `;
 
-      document.body.appendChild(toast);
+      document.body.appendChild(notificacao);
 
       // Animar entrada
       setTimeout(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateX(-50%) translateY(0)';
+        notificacao.style.opacity = '1';
+        notificacao.style.transform = 'translateX(-50%) translateY(0)';
       }, 100);
 
       // Remover após duração
       setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(-50%) translateY(-20px)';
+        notificacao.style.opacity = '0';
+        notificacao.style.transform = 'translateX(-50%) translateY(-20px)';
         setTimeout(() => {
-          if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
+          if (notificacao.parentNode) {
+            notificacao.parentNode.removeChild(notificacao);
           }
         }, 300);
-      }, duration);
+      }, duracao);
     },
 
-    getIcon(message) {
-      if (message.includes('✅') || message.includes('sucesso')) return '✅';
-      if (message.includes('❌') || message.includes('erro')) return '❌';
-      if (message.includes('⭐') || message.includes('bem-vindo')) return '⭐';
-      if (message.includes('🚀')) return '🚀';
-      if (message.includes('🌿')) return '🌿';
-      if (message.includes('🎁')) return '🎁';
+    obterIcone(mensagem) {
+      if (mensagem.includes('✅') || mensagem.includes('sucesso')) return '✅';
+      if (mensagem.includes('❌') || mensagem.includes('erro')) return '❌';
+      if (mensagem.includes('⭐') || mensagem.includes('bem-vindo')) return '⭐';
+      if (mensagem.includes('🚀')) return '🚀';
+      if (mensagem.includes('🌿')) return '🌿';
+      if (mensagem.includes('🎁')) return '🎁';
+      if (mensagem.includes('📚')) return '📚';
       return 'ℹ️';
     }
   };
 
-  // ========== SISTEMA DE FPS ==========
-  const FPSTracker = {
+  // ========== RASTREADOR DE FPS ==========
+  const RastreadorFPS = {
     fps: 0,
-    frameCount: 0,
-    lastTime: performance.now(),
-    fpsElement: null,
+    contadorQuadros: 0,
+    ultimoTempo: performance.now(),
+    elementoFPS: null,
 
-    init() {
-      this.createFPSDisplay();
-      this.startTracking();
+    iniciar() {
+      this.criarDisplayFPS();
+      this.iniciarRastreamento();
     },
 
-    createFPSDisplay() {
-      this.fpsElement = document.createElement('div');
-      this.fpsElement.id = 'typeflow-fps';
-      this.fpsElement.style.cssText = `
+    criarDisplayFPS() {
+      this.elementoFPS = document.createElement('div');
+      this.elementoFPS.id = 'typeflow-fps';
+      this.elementoFPS.style.cssText = `
         position: fixed;
         bottom: 10px;
         left: 10px;
@@ -316,133 +446,126 @@
         transition: all 0.3s ease;
         opacity: 0.9;
       `;
-      document.body.appendChild(this.fpsElement);
-      this.updateDisplay();
+      document.body.appendChild(this.elementoFPS);
+      this.atualizarDisplay();
     },
 
-    startTracking() {
-      const updateFPS = () => {
-        this.frameCount++;
-        const currentTime = performance.now();
+    iniciarRastreamento() {
+      const atualizarFPS = () => {
+        this.contadorQuadros++;
+        const tempoAtual = performance.now();
         
-        if (currentTime - this.lastTime >= 1000) {
-          this.fps = Math.round((this.frameCount * 1000) / (currentTime - this.lastTime));
-          this.frameCount = 0;
-          this.lastTime = currentTime;
-          this.updateDisplay();
+        if (tempoAtual - this.ultimoTempo >= 1000) {
+          this.fps = Math.round((this.contadorQuadros * 1000) / (tempoAtual - this.ultimoTempo));
+          this.contadorQuadros = 0;
+          this.ultimoTempo = tempoAtual;
+          this.atualizarDisplay();
         }
         
-        requestAnimationFrame(updateFPS);
+        requestAnimationFrame(atualizarFPS);
       };
       
-      requestAnimationFrame(updateFPS);
+      requestAnimationFrame(atualizarFPS);
     },
 
-    updateDisplay() {
-      if (this.fpsElement) {
-        const ms = Math.round(1000 / Math.max(this.fps, 1));
-        this.fpsElement.innerHTML = `
+    atualizarDisplay() {
+      if (this.elementoFPS) {
+        const milissegundos = Math.round(1000 / Math.max(this.fps, 1));
+        this.elementoFPS.innerHTML = `
           <div style="line-height: 1.4;">
             <div>FPS: ${this.fps}</div>
-            <div>MS: ${ms}ms</div>
+            <div>MS: ${milissegundos}ms</div>
             <div style="font-size: 10px; opacity: 0.8;">@_zx.lipe_</div>
           </div>
         `;
-      }
-    },
-
-    toggleVisibility(show) {
-      if (this.fpsElement) {
-        this.fpsElement.style.display = show ? 'block' : 'none';
       }
     }
   };
 
   // ========== GESTÃO DE ESTADO ==========
-  const StateManager = {
-    state: {
-      currentMode: 'dark',
-      capturedInfo: {},
-      isApplyingStyles: false,
-      observerActive: false,
-      wordGoal: 200,
-      popupVisible: true,
-      isTyping: false,
-      typingQueue: [],
-      isMinimized: false,
-      splashShown: false,
-      widgetsVisible: true
+  const GerenciadorEstado = {
+    estado: {
+      modoAtual: 'escuro',
+      informacoesCapturadas: {},
+      aplicandoEstilos: false,
+      observadorAtivo: false,
+      metaPalavras: 200,
+      popupVisivel: true,
+      digitando: false,
+      filaDigitacao: [],
+      minimizado: false,
+      telaSplashMostrada: false,
+      tutorialMostrado: false
     },
     
-    setState(newState) {
-      this.state = { ...this.state, ...newState };
-      this.notifyObservers();
+    atualizarEstado(novoEstado) {
+      this.estado = { ...this.estado, ...novoEstado };
+      this.notificarObservadores();
     },
     
-    observers: [],
-    subscribe(callback) {
-      this.observers.push(callback);
+    observadores: [],
+    inscrever(callback) {
+      this.observadores.push(callback);
     },
     
-    notifyObservers() {
-      this.observers.forEach(callback => callback(this.state));
+    notificarObservadores() {
+      this.observadores.forEach(callback => callback(this.estado));
     },
 
-    getState() {
-      return this.state;
+    obterEstado() {
+      return this.estado;
     }
   };
 
   // ========== SISTEMA DE UTILITÁRIOS ==========
-  const Utils = {
-    debounce(func, wait) {
+  const Utilitarios = {
+    debounce(funcao, espera) {
       let timeout;
-      return function executedFunction(...args) {
-        const later = () => {
+      return function executarFuncao(...args) {
+        const depois = () => {
           clearTimeout(timeout);
-          func(...args);
+          funcao(...args);
         };
         clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+        timeout = setTimeout(depois, espera);
       };
     },
 
-    async safeExecute(operation, errorMessage) {
+    async executarComSeguranca(operacao, mensagemErro) {
       try {
-        return await operation();
-      } catch (error) {
-        console.error(`${errorMessage}:`, error);
-        ToastSystem.show(`❌ ${errorMessage}`, 4000);
+        return await operacao();
+      } catch (erro) {
+        console.error(`${mensagemErro}:`, erro);
+        SistemaNotificacoes.mostrar(`❌ ${mensagemErro}`, 4000);
         return null;
       }
     },
 
-    throttle(func, limit) {
-      let inThrottle;
+    throttle(funcao, limite) {
+      let emThrottle;
       return function(...args) {
-        if (!inThrottle) {
-          func.apply(this, args);
-          inThrottle = true;
-          setTimeout(() => inThrottle = false, limit);
+        if (!emThrottle) {
+          funcao.apply(this, args);
+          emThrottle = true;
+          setTimeout(() => emThrottle = false, limite);
         }
       };
     },
 
-    // Função para calcular tamanhos baseado no dispositivo
-    getSize(baseSize) {
-      return baseSize * popupSize;
+    obterTamanho(tamanhoBase) {
+      return tamanhoBase * tamanhoPopup;
     },
 
-    delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+    atraso(milissegundos) {
+      return new Promise(resolve => setTimeout(resolve, milissegundos));
     }
   };
 
-  // ========== GERENCIAMENTO DE MODO ESCURO/CLARO ==========
-  const ThemeManager = {
-    toggleModoEscuro() {
-      const state = StateManager.getState();
-      if (state.currentMode === 'dark') {
+  // ========== GERENCIAMENTO DE TEMA ==========
+  const GerenciadorTema = {
+    alternarModoEscuro() {
+      const estado = GerenciadorEstado.obterEstado();
+      if (estado.modoAtual === 'escuro') {
         this.desativarModoEscuro();
       } else {
         this.ativarModoEscuroUniversal();
@@ -450,49 +573,49 @@
     },
 
     ativarModoEscuroUniversal() {
-      const state = StateManager.getState();
-      if (state.isApplyingStyles) return;
-      StateManager.setState({ isApplyingStyles: true, observerActive: false });
+      const estado = GerenciadorEstado.obterEstado();
+      if (estado.aplicandoEstilos) return;
+      GerenciadorEstado.atualizarEstado({ aplicandoEstilos: true, observadorAtivo: false });
       
-      StateManager.setState({ currentMode: 'dark' });
-      localStorage.setItem('toolpad-mode', 'dark');
-      document.documentElement.setAttribute('data-toolpad-color-scheme', 'dark');
+      GerenciadorEstado.atualizarEstado({ modoAtual: 'escuro' });
+      localStorage.setItem('toolpad-mode', 'escuro');
+      document.documentElement.setAttribute('data-toolpad-color-scheme', 'escuro');
       this.aplicarEstilosModoEscuro();
       
-      if (window.darkModeBtn) {
-        window.darkModeBtn.innerHTML = '☀️';
-        window.darkModeBtn.title = 'Alternar para Modo Claro';
+      if (window.botaoModoEscuro) {
+        window.botaoModoEscuro.innerHTML = '☀️';
+        window.botaoModoEscuro.title = 'Alternar para Modo Claro';
       }
       
       setTimeout(() => {
-        StateManager.setState({ observerActive: true, isApplyingStyles: false });
+        GerenciadorEstado.atualizarEstado({ observadorAtivo: true, aplicandoEstilos: false });
       }, 1000);
       
-      ToastSystem.show('🌙 Modo escuro ativado', 2000);
+      SistemaNotificacoes.mostrar('🌙 Modo escuro ativado', 2000);
     },
 
     desativarModoEscuro() {
-      const state = StateManager.getState();
-      if (state.isApplyingStyles) return;
-      StateManager.setState({ isApplyingStyles: true, observerActive: false });
+      const estado = GerenciadorEstado.obterEstado();
+      if (estado.aplicandoEstilos) return;
+      GerenciadorEstado.atualizarEstado({ aplicandoEstilos: true, observadorAtivo: false });
       
-      StateManager.setState({ currentMode: 'light' });
+      GerenciadorEstado.atualizarEstado({ modoAtual: 'claro' });
       localStorage.removeItem('toolpad-mode');
       document.documentElement.removeAttribute('data-toolpad-color-scheme');
       
       const estilosEscuro = document.querySelectorAll('[data-modo-escuro="universal"]');
       estilosEscuro.forEach(style => style.remove());
       
-      if (window.darkModeBtn) {
-        window.darkModeBtn.innerHTML = '🌙';
-        window.darkModeBtn.title = 'Alternar para Modo Escuro';
+      if (window.botaoModoEscuro) {
+        window.botaoModoEscuro.innerHTML = '🌙';
+        window.botaoModoEscuro.title = 'Alternar para Modo Escuro';
       }
       
       setTimeout(() => {
-        StateManager.setState({ observerActive: true, isApplyingStyles: false });
+        GerenciadorEstado.atualizarEstado({ observadorAtivo: true, aplicandoEstilos: false });
       }, 1000);
       
-      ToastSystem.show('☀️ Modo claro ativado', 2000);
+      SistemaNotificacoes.mostrar('☀️ Modo claro ativado', 2000);
     },
 
     aplicarEstilosModoEscuro() {
@@ -501,21 +624,21 @@
       
       const estiloEscuroUniversal = `
         body {
-            background-color: ${CONFIG.darkModeColors.background} !important;
-            color: ${CONFIG.darkModeColors.text} !important;
+            background-color: ${CONFIGURACOES.coresModoEscuro.fundo} !important;
+            color: ${CONFIGURACOES.coresModoEscuro.texto} !important;
         }
         [class*="MuiBox-root"], [class*="MuiPaper-root"], [class*="MuiCard-root"],
         [class*="container"], [class*="Container"], .main-content-container {
-            background-color: ${CONFIG.darkModeColors.surface} !important;
-            color: ${CONFIG.darkModeColors.text} !important;
+            background-color: ${CONFIGURACOES.coresModoEscuro.superficie} !important;
+            color: ${CONFIGURACOES.coresModoEscuro.texto} !important;
         }
         [class*="MuiTypography"], p, span, div, h1, h2, h3, h4, h5, h6 {
-            color: ${CONFIG.darkModeColors.text} !important;
+            color: ${CONFIGURACOES.coresModoEscuro.texto} !important;
         }
         [class*="MuiInput"], [class*="MuiTextField"], input, textarea, select {
-            background-color: ${CONFIG.darkModeColors.card} !important;
-            color: ${CONFIG.darkModeColors.text} !important;
-            border-color: ${CONFIG.darkModeColors.border} !important;
+            background-color: ${CONFIGURACOES.coresModoEscuro.cartao} !important;
+            color: ${CONFIGURACOES.coresModoEscuro.texto} !important;
+            border-color: ${CONFIGURACOES.coresModoEscuro.borda} !important;
         }
       `;
       
@@ -527,38 +650,38 @@
   };
 
   // ========== CAPTURA DE INFORMAÇÕES ==========
-  const InfoCapture = {
+  const CapturaInformacoes = {
     capturarInformacoes() {
       const containers = document.querySelectorAll('div.css-skkg69');
       const informacoes = {};
       
       containers.forEach(container => {
-        const labelElement = container.querySelector('p.MuiTypography-body1');
-        const valorElement = container.querySelector('p.MuiTypography-body2');
+        const elementoLabel = container.querySelector('p.MuiTypography-body1');
+        const elementoValor = container.querySelector('p.MuiTypography-body2');
         
-        if (labelElement && valorElement) {
-          const label = labelElement.textContent.replace(':', '').trim().toLowerCase();
-          const valor = valorElement.textContent.trim();
+        if (elementoLabel && elementoValor) {
+          const label = elementoLabel.textContent.replace(':', '').trim().toLowerCase();
+          const valor = elementoValor.textContent.trim();
           informacoes[label] = valor;
           
           if (label.includes('palavras') || label.includes('número')) {
             const match = valor.match(/(\d+)/);
             if (match) {
-              StateManager.setState({ wordGoal: parseInt(match[1]) });
+              GerenciadorEstado.atualizarEstado({ metaPalavras: parseInt(match[1]) });
             }
           }
         }
       });
       
-      StateManager.setState({ capturedInfo: informacoes });
+      GerenciadorEstado.atualizarEstado({ informacoesCapturadas: informacoes });
       return informacoes;
     },
 
     gerarPromptIA() {
-      const state = StateManager.getState();
-      const genero = state.capturedInfo.gênero || 'desconhecido';
-      const tema = state.capturedInfo.tema || 'desconhecido';
-      const palavras = state.capturedInfo['número de palavras'] || state.wordGoal;
+      const estado = GerenciadorEstado.obterEstado();
+      const genero = estado.informacoesCapturadas.gênero || 'desconhecido';
+      const tema = estado.informacoesCapturadas.tema || 'desconhecido';
+      const palavras = estado.informacoesCapturadas['número de palavras'] || estado.metaPalavras;
       
       return `Faça um texto do gênero ${genero} sobre ${tema} de ${palavras} palavras, com um título.`;
     },
@@ -568,48 +691,44 @@
       
       try {
         await navigator.clipboard.writeText(prompt);
-        ToastSystem.show('✅ Prompt copiado para a área de transferência!', 3000);
+        SistemaNotificacoes.mostrar('✅ Prompt copiado para a área de transferência!', 3000);
       } catch (err) {
-        const textArea = document.createElement('textarea');
-        textArea.value = prompt;
-        document.body.appendChild(textArea);
-        textArea.select();
+        const areaTexto = document.createElement('textarea');
+        areaTexto.value = prompt;
+        document.body.appendChild(areaTexto);
+        areaTexto.select();
         try {
           document.execCommand('copy');
-          ToastSystem.show('✅ Prompt copiado para a área de transferência!', 3000);
-        } catch (fallbackErr) {
-          ToastSystem.show('❌ Erro ao copiar. Aqui está o prompt:<br><br>' + prompt, 6000);
+          SistemaNotificacoes.mostrar('✅ Prompt copiado para a área de transferência!', 3000);
+        } catch (erroFallback) {
+          SistemaNotificacoes.mostrar('❌ Erro ao copiar. Aqui está o prompt:<br><br>' + prompt, 6000);
         }
-        document.body.removeChild(textArea);
+        document.body.removeChild(areaTexto);
       }
     }
   };
 
   // ========== SISTEMA DE DESBLOQUEIO DE COLAGEM ==========
-  const PasteUnlocker = {
-    init() {
-      this.unlockPaste();
-      this.setupPasteObserver();
+  const DesbloqueadorColagem = {
+    iniciar() {
+      this.desbloquearColagem();
+      this.configurarObservadorColagem();
     },
 
-    unlockPaste() {
+    desbloquearColagem() {
       console.log('🔓 Iniciando desbloqueio de colagem...');
       
-      // Remove bloqueios de todos os campos de texto
       const campos = document.querySelectorAll('textarea, input[type="text"], [contenteditable="true"]');
       
       campos.forEach(campo => {
-        // Remove atributos de bloqueio
         campo.removeAttribute('onpaste');
         campo.removeAttribute('oncopy');
         campo.removeAttribute('oncut');
         
-        // Remove event listeners
         campo.onpaste = null;
         campo.oncopy = null;
         campo.oncut = null;
         
-        // Permite tudo
         campo.addEventListener('paste', e => e.stopPropagation(), true);
         campo.addEventListener('copy', e => e.stopPropagation(), true);
         campo.addEventListener('cut', e => e.stopPropagation(), true);
@@ -617,14 +736,12 @@
       
       console.log(`🔓 Bloqueios removidos de ${campos.length} campos`);
       
-      // Método nuclear para garantir desbloqueio
       setTimeout(() => {
-        this.nuclearUnlock();
+        this.desbloqueioNuclear();
       }, 2000);
     },
 
-    nuclearUnlock() {
-      // Substitui completamente os textareas problemáticos
+    desbloqueioNuclear() {
       const textareas = document.querySelectorAll('textarea');
       textareas.forEach(textarea => {
         if (textarea.onpaste || textarea.getAttribute('onpaste')) {
@@ -641,18 +758,17 @@
       });
     },
 
-    setupPasteObserver() {
-      // Observa novos elementos adicionados à página
-      const observer = new MutationObserver((mutations) => {
+    configurarObservadorColagem() {
+      const observador = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1) { // Element node
+            if (node.nodeType === 1) {
               if (node.tagName === 'TEXTAREA' || node.tagName === 'INPUT') {
-                this.unlockPaste();
+                this.desbloquearColagem();
               } else if (node.querySelectorAll) {
                 const campos = node.querySelectorAll('textarea, input[type="text"]');
                 if (campos.length > 0) {
-                  this.unlockPaste();
+                  this.desbloquearColagem();
                 }
               }
             }
@@ -660,7 +776,7 @@
         });
       });
 
-      observer.observe(document.body, {
+      observador.observe(document.body, {
         childList: true,
         subtree: true
       });
@@ -668,82 +784,82 @@
   };
 
   // ========== SISTEMA DE ARRASTAR ==========
-  class DragManager {
-    constructor(element) {
-      this.element = element;
-      this.isDragging = false;
-      this.offset = { x: 0, y: 0 };
-      this.bindEvents();
+  class GerenciadorArrastar {
+    constructor(elemento) {
+      this.elemento = elemento;
+      this.arrastando = false;
+      this.deslocamento = { x: 0, y: 0 };
+      this.vincularEventos();
     }
     
-    bindEvents() {
-      const header = this.element.querySelector('.tf-header');
-      if (!header) return;
+    vincularEventos() {
+      const cabecalho = this.elemento.querySelector('.tf-cabecalho');
+      if (!cabecalho) return;
 
-      header.addEventListener('mousedown', this.startDrag.bind(this));
-      document.addEventListener('mousemove', Utils.throttle(this.drag.bind(this), 16));
-      document.addEventListener('mouseup', this.stopDrag.bind(this));
+      cabecalho.addEventListener('mousedown', this.iniciarArrastar.bind(this));
+      document.addEventListener('mousemove', Utilitarios.throttle(this.arrastar.bind(this), 16));
+      document.addEventListener('mouseup', this.pararArrastar.bind(this));
       
-      header.addEventListener('touchstart', this.startDrag.bind(this));
-      document.addEventListener('touchmove', Utils.throttle(this.drag.bind(this), 16));
-      document.addEventListener('touchend', this.stopDrag.bind(this));
+      cabecalho.addEventListener('touchstart', this.iniciarArrastar.bind(this));
+      document.addEventListener('touchmove', Utilitarios.throttle(this.arrastar.bind(this), 16));
+      document.addEventListener('touchend', this.pararArrastar.bind(this));
     }
     
-    startDrag(e) {
-      this.isDragging = true;
+    iniciarArrastar(e) {
+      this.arrastando = true;
       const clientX = e.clientX || e.touches[0].clientX;
       const clientY = e.clientY || e.touches[0].clientY;
-      const rect = this.element.getBoundingClientRect();
+      const rect = this.elemento.getBoundingClientRect();
       
-      this.offset.x = clientX - rect.left;
-      this.offset.y = clientY - rect.top;
+      this.deslocamento.x = clientX - rect.left;
+      this.deslocamento.y = clientY - rect.top;
       
       document.body.style.userSelect = 'none';
-      this.element.style.transition = 'none';
+      this.elemento.style.transition = 'none';
     }
     
-    drag(e) {
-      if (!this.isDragging) return;
+    arrastar(e) {
+      if (!this.arrastando) return;
       
       const clientX = e.clientX || (e.touches && e.touches[0].clientX);
       const clientY = e.clientY || (e.touches && e.touches[0].clientY);
       
       if (!clientX || !clientY) return;
       
-      let left = clientX - this.offset.x;
-      let top = clientY - this.offset.y;
+      let esquerda = clientX - this.deslocamento.x;
+      let topo = clientY - this.deslocamento.y;
       
-      left = Math.max(8, Math.min(window.innerWidth - this.element.offsetWidth - 8, left));
-      top = Math.max(8, Math.min(window.innerHeight - this.element.offsetHeight - 8, top));
+      esquerda = Math.max(8, Math.min(window.innerWidth - this.elemento.offsetWidth - 8, esquerda));
+      topo = Math.max(8, Math.min(window.innerHeight - this.elemento.offsetHeight - 8, topo));
       
-      this.element.style.left = left + 'px';
-      this.element.style.top = top + 'px';
-      this.element.style.right = 'auto';
-      this.element.style.bottom = 'auto';
+      this.elemento.style.left = esquerda + 'px';
+      this.elemento.style.top = topo + 'px';
+      this.elemento.style.right = 'auto';
+      this.elemento.style.bottom = 'auto';
     }
     
-    stopDrag() {
-      this.isDragging = false;
+    pararArrastar() {
+      this.arrastando = false;
       document.body.style.userSelect = '';
-      this.element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      this.elemento.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
     }
   }
 
-  // ========== SISTEMA DE POPUP SIMPLIFICADO ==========
-  const PopupManager = {
-    init() {
-      this.createPopup();
-      this.setupEventListeners();
-      this.setupResponsiveBehavior();
+  // ========== SISTEMA DE POPUP ==========
+  const GerenciadorPopup = {
+    iniciar() {
+      this.criarPopup();
+      this.configurarEventListeners();
+      this.configurarComportamentoResponsivo();
     },
 
-    createPopup() {
-      const state = StateManager.getState();
-      const colors = state.currentMode === 'dark' ? CONFIG.darkModeColors : CONFIG.lightModeColors;
+    criarPopup() {
+      const estado = GerenciadorEstado.obterEstado();
+      const cores = estado.modoAtual === 'escuro' ? CONFIGURACOES.coresModoEscuro : CONFIGURACOES.coresModoClaro;
 
-      const currentWidth = Utils.getSize(350);
-      const currentPadding = Utils.getSize(16);
-      const currentBorderRadius = Utils.getSize(16);
+      const larguraAtual = Utilitarios.obterTamanho(350);
+      const paddingAtual = Utilitarios.obterTamanho(16);
+      const bordaArredondadaAtual = Utilitarios.obterTamanho(16);
 
       const popup = document.createElement('div');
       popup.id = 'typeflow-popup';
@@ -751,65 +867,65 @@
         position: fixed;
         top: 20px;
         right: 20px;
-        width: ${currentWidth}px;
-        background: ${colors.surface};
-        color: ${colors.text};
-        padding: ${currentPadding}px;
-        border-radius: ${currentBorderRadius}px;
+        width: ${larguraAtual}px;
+        background: ${cores.superficie};
+        color: ${cores.texto};
+        padding: ${paddingAtual}px;
+        border-radius: ${bordaArredondadaAtual}px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         z-index: 999999;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 1px solid ${colors.border};
+        border: 1px solid ${cores.borda};
         backdrop-filter: blur(10px);
         max-height: 80px;
         overflow: hidden;
       `;
 
-      this.createHeader(popup, colors, state.currentMode);
+      this.criarCabecalho(popup, cores, estado.modoAtual);
       
       document.body.appendChild(popup);
       this.popup = popup;
 
-      new DragManager(popup);
+      new GerenciadorArrastar(popup);
     },
 
-    createHeader(popup, colors, currentMode) {
-      const header = document.createElement('div');
-      header.className = 'tf-header';
-      header.style.cssText = `
+    criarCabecalho(popup, cores, modoAtual) {
+      const cabecalho = document.createElement('div');
+      cabecalho.className = 'tf-cabecalho';
+      cabecalho.style.cssText = `
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: ${Utils.getSize(8)}px;
+        gap: ${Utilitarios.obterTamanho(8)}px;
         cursor: move;
       `;
       
       // Nome Type Flow
-      const titleEl = document.createElement('div');
-      titleEl.innerHTML = `
-        <div style="display: flex; align-items: center; gap: ${Utils.getSize(8)}px;">
-          <div style="font-size: ${Utils.getSize(20)}px;">🌀</div>
-          <div style="font-weight: 700; font-size: ${Utils.getSize(16)}px; color: ${colors.textImportant};">Type Flow</div>
+      const tituloEl = document.createElement('div');
+      tituloEl.innerHTML = `
+        <div style="display: flex; align-items: center; gap: ${Utilitarios.obterTamanho(8)}px;">
+          <div style="font-size: ${Utilitarios.obterTamanho(20)}px;">🌀</div>
+          <div style="font-weight: 700; font-size: ${Utilitarios.obterTamanho(16)}px; color: ${cores.textoImportante};">Type Flow</div>
         </div>
       `;
       
-      const controlsContainer = document.createElement('div');
-      controlsContainer.style.cssText = `display: flex; gap: ${Utils.getSize(8)}px; align-items: center;`;
+      const containerControles = document.createElement('div');
+      containerControles.style.cssText = `display: flex; gap: ${Utilitarios.obterTamanho(8)}px; align-items: center;`;
       
       // Botão Doação
-      const donationBtn = document.createElement('button');
-      donationBtn.innerHTML = '❤️';
-      donationBtn.title = 'Apoiar o projeto - Widgets ativos';
-      donationBtn.style.cssText = `
+      const botaoDoacao = document.createElement('button');
+      botaoDoacao.innerHTML = '❤️';
+      botaoDoacao.title = 'Apoiar o projeto - Widgets ativos';
+      botaoDoacao.style.cssText = `
         background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
         border: none;
         color: white;
-        font-size: ${Utils.getSize(16)}px;
+        font-size: ${Utilitarios.obterTamanho(16)}px;
         cursor: pointer;
-        width: ${Utils.getSize(36)}px;
-        height: ${Utils.getSize(36)}px;
-        border-radius: ${Utils.getSize(10)}px;
+        width: ${Utilitarios.obterTamanho(36)}px;
+        height: ${Utilitarios.obterTamanho(36)}px;
+        border-radius: ${Utilitarios.obterTamanho(10)}px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -817,18 +933,18 @@
       `;
       
       // Botão Prompt IA
-      const promptBtn = document.createElement('button');
-      promptBtn.innerHTML = '🤖';
-      promptBtn.title = 'Criar Prompt para IA';
-      promptBtn.style.cssText = `
-        background: ${colors.gradient};
+      const botaoPrompt = document.createElement('button');
+      botaoPrompt.innerHTML = '🤖';
+      botaoPrompt.title = 'Criar Prompt para IA';
+      botaoPrompt.style.cssText = `
+        background: ${cores.gradiente};
         border: none;
         color: white;
-        font-size: ${Utils.getSize(16)}px;
+        font-size: ${Utilitarios.obterTamanho(16)}px;
         cursor: pointer;
-        width: ${Utils.getSize(36)}px;
-        height: ${Utils.getSize(36)}px;
-        border-radius: ${Utils.getSize(10)}px;
+        width: ${Utilitarios.obterTamanho(36)}px;
+        height: ${Utilitarios.obterTamanho(36)}px;
+        border-radius: ${Utilitarios.obterTamanho(10)}px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -836,18 +952,18 @@
       `;
       
       // Botão Modo Claro/Escuro
-      window.darkModeBtn = document.createElement('button');
-      window.darkModeBtn.innerHTML = currentMode === 'dark' ? '☀️' : '🌙';
-      window.darkModeBtn.title = currentMode === 'dark' ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro';
-      window.darkModeBtn.style.cssText = `
+      window.botaoModoEscuro = document.createElement('button');
+      window.botaoModoEscuro.innerHTML = modoAtual === 'escuro' ? '☀️' : '🌙';
+      window.botaoModoEscuro.title = modoAtual === 'escuro' ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro';
+      window.botaoModoEscuro.style.cssText = `
         background: rgba(255,255,255,0.1);
         border: none;
-        color: ${colors.text};
-        font-size: ${Utils.getSize(16)}px;
+        color: ${cores.texto};
+        font-size: ${Utilitarios.obterTamanho(16)}px;
         cursor: pointer;
-        width: ${Utils.getSize(36)}px;
-        height: ${Utils.getSize(36)}px;
-        border-radius: ${Utils.getSize(10)}px;
+        width: ${Utilitarios.obterTamanho(36)}px;
+        height: ${Utilitarios.obterTamanho(36)}px;
+        border-radius: ${Utilitarios.obterTamanho(10)}px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -855,92 +971,84 @@
         backdrop-filter: blur(10px);
       `;
 
-      // Botão Toggle Widgets
-      const widgetsBtn = document.createElement('button');
-      widgetsBtn.innerHTML = '🎁';
-      widgetsBtn.title = 'Mostrar/ocultar widgets de doação';
-      widgetsBtn.style.cssText = `
+      // Botão Tutorial
+      const botaoTutorial = document.createElement('button');
+      botaoTutorial.innerHTML = '🎮';
+      botaoTutorial.title = 'Abrir tutorial de uso';
+      botaoTutorial.style.cssText = `
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
         color: white;
-        font-size: ${Utils.getSize(16)}px;
+        font-size: ${Utilitarios.obterTamanho(16)}px;
         cursor: pointer;
-        width: ${Utils.getSize(36)}px;
-        height: ${Utils.getSize(36)}px;
-        border-radius: ${Utils.getSize(10)}px;
+        width: ${Utilitarios.obterTamanho(36)}px;
+        height: ${Utilitarios.obterTamanho(36)}px;
+        border-radius: ${Utilitarios.obterTamanho(10)}px;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.2s ease;
       `;
       
-      controlsContainer.appendChild(donationBtn);
-      controlsContainer.appendChild(promptBtn);
-      controlsContainer.appendChild(window.darkModeBtn);
-      controlsContainer.appendChild(widgetsBtn);
-      header.appendChild(titleEl);
-      header.appendChild(controlsContainer);
-      popup.appendChild(header);
+      containerControles.appendChild(botaoDoacao);
+      containerControles.appendChild(botaoPrompt);
+      containerControles.appendChild(window.botaoModoEscuro);
+      containerControles.appendChild(botaoTutorial);
+      cabecalho.appendChild(tituloEl);
+      cabecalho.appendChild(containerControles);
+      popup.appendChild(cabecalho);
 
       // Efeitos hover
-      [donationBtn, promptBtn, window.darkModeBtn, widgetsBtn].forEach(btn => {
-        btn.addEventListener('mouseenter', function() {
+      [botaoDoacao, botaoPrompt, window.botaoModoEscuro, botaoTutorial].forEach(botao => {
+        botao.addEventListener('mouseenter', function() {
           this.style.transform = 'scale(1.1)';
           this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
         });
-        btn.addEventListener('mouseleave', function() {
+        botao.addEventListener('mouseleave', function() {
           this.style.transform = 'scale(1)';
           this.style.boxShadow = 'none';
         });
       });
 
-      this.donationBtn = donationBtn;
-      this.promptBtn = promptBtn;
-      this.widgetsBtn = widgetsBtn;
+      this.botaoDoacao = botaoDoacao;
+      this.botaoPrompt = botaoPrompt;
+      this.botaoTutorial = botaoTutorial;
     },
 
-    setupEventListeners() {
+    configurarEventListeners() {
       // Botão Modo Claro/Escuro
-      window.darkModeBtn.addEventListener('click', () => {
-        ThemeManager.toggleModoEscuro();
+      window.botaoModoEscuro.addEventListener('click', () => {
+        GerenciadorTema.alternarModoEscuro();
       });
 
       // Botão Prompt IA
-      this.promptBtn.addEventListener('click', () => {
-        Utils.safeExecute(() => {
-          // Primeiro captura as informações
-          const info = InfoCapture.capturarInformacoes();
+      this.botaoPrompt.addEventListener('click', () => {
+        Utilitarios.executarComSeguranca(() => {
+          const info = CapturaInformacoes.capturarInformacoes();
           
           if (info.tema || info.gênero) {
-            InfoCapture.copiarPromptParaAreaTransferencia();
+            CapturaInformacoes.copiarPromptParaAreaTransferencia();
           } else {
-            ToastSystem.show('ℹ️ Nenhuma informação encontrada. Verifique se está na página de redação.', 3000);
+            SistemaNotificacoes.mostrar('ℹ️ Nenhuma informação encontrada. Verifique se está na página de redação.', 3000);
           }
         }, 'Erro ao criar prompt');
       });
 
       // Botão Doação - Mostra informações
-      this.donationBtn.addEventListener('click', () => {
-        ToastSystem.show('❤️ Widgets de doação ativos! Use o botão 🎁 para controlar.', 3000);
+      this.botaoDoacao.addEventListener('click', () => {
+        SistemaNotificacoes.mostrar('❤️ Widgets de doação sempre ativos! Obrigado pelo apoio.', 3000);
       });
 
-      // Botão Toggle Widgets
-      this.widgetsBtn.addEventListener('click', () => {
-        const state = StateManager.getState();
-        const newVisibility = !state.widgetsVisible;
-        
-        StateManager.setState({ widgetsVisible: newVisibility });
-        LivePixWidgets.toggleWidgets(newVisibility);
-        
-        this.widgetsBtn.title = newVisibility ? 'Ocultar widgets de doação' : 'Mostrar widgets de doação';
-        ToastSystem.show(newVisibility ? '🎁 Widgets de doação visíveis' : '🎁 Widgets de doação ocultos', 2000);
+      // Botão Tutorial
+      this.botaoTutorial.addEventListener('click', () => {
+        SistemaTutorial.mostrarTutorial();
       });
     },
 
-    setupResponsiveBehavior() {
+    configurarComportamentoResponsivo() {
       const mediaQuery = window.matchMedia('(max-width: 768px)');
       
-      const handleMobileChange = (e) => {
+      const lidarComMudancaMobile = (e) => {
         if (e.matches) {
           this.popup.style.width = 'calc(100vw - 40px)';
           this.popup.style.left = '20px';
@@ -956,97 +1064,103 @@
         }
       };
       
-      mediaQuery.addListener(handleMobileChange);
-      handleMobileChange(mediaQuery);
+      mediaQuery.addListener(lidarComMudancaMobile);
+      lidarComMudancaMobile(mediaQuery);
     }
   };
 
-  // ========== CLEANUP SYSTEM ==========
-  const CleanupManager = {
-    init() {
-      this.setupCleanup();
+  // ========== SISTEMA DE LIMPEZA ==========
+  const GerenciadorLimpeza = {
+    iniciar() {
+      this.configurarLimpeza();
     },
 
-    setupCleanup() {
-      const cleanup = () => {
+    configurarLimpeza() {
+      const limpar = () => {
         if (window.typeflowObserver) {
           window.typeflowObserver.disconnect();
         }
-        const fpsElement = document.getElementById('typeflow-fps');
-        if (fpsElement) {
-          fpsElement.remove();
+        const elementoFPS = document.getElementById('typeflow-fps');
+        if (elementoFPS) {
+          elementoFPS.remove();
         }
-        const donationWidget = document.getElementById('livepix-donation');
-        if (donationWidget) {
-          donationWidget.remove();
+        const widgetDoacao = document.getElementById('livepix-doacao');
+        if (widgetDoacao) {
+          widgetDoacao.remove();
         }
-        const qrWidget = document.getElementById('livepix-qr');
-        if (qrWidget) {
-          qrWidget.remove();
+        const widgetQR = document.getElementById('livepix-qr');
+        if (widgetQR) {
+          widgetQR.remove();
         }
-        const donatorsWidget = document.getElementById('livepix-donators');
-        if (donatorsWidget) {
-          donatorsWidget.remove();
+        const widgetDoadores = document.getElementById('livepix-doadores');
+        if (widgetDoadores) {
+          widgetDoadores.remove();
         }
       };
       
-      window.addEventListener('beforeunload', cleanup);
-      return cleanup;
+      window.addEventListener('beforeunload', limpar);
+      return limpar;
     }
   };
 
   // ========== INICIALIZAÇÃO ==========
-  async function init() {
-    // Mostrar splash screen primeiro
-    SplashScreen.show();
+  async function iniciar() {
+    // Mostrar tela splash primeiro
+    TelaSplash.mostrar();
     
     // Inicializar componentes principais
-    await Utils.delay(1000);
+    await Utilitarios.atraso(1000);
     
-    PopupManager.init();
-    PasteUnlocker.init(); // Inicializar desbloqueio de colagem
-    LivePixWidgets.init(); // Inicializar sistema LivePix
-    ThemeManager.ativarModoEscuroUniversal();
-    FPSTracker.init();
-    CleanupManager.init();
+    GerenciadorPopup.iniciar();
+    DesbloqueadorColagem.iniciar();
+    WidgetsLivePix.iniciar();
+    GerenciadorTema.ativarModoEscuroUniversal();
+    RastreadorFPS.iniciar();
+    GerenciadorLimpeza.iniciar();
     
     // Configurar observer
     window.typeflowObserver = new MutationObserver(function(mutations) {
-      const state = StateManager.getState();
-      if (!state.observerActive) return;
+      const estado = GerenciadorEstado.obterEstado();
+      if (!estado.observadorAtivo) return;
       
-      if (state.currentMode === 'dark') {
-        const currentAttr = document.documentElement.getAttribute('data-toolpad-color-scheme');
-        if (currentAttr !== 'dark') {
-          document.documentElement.setAttribute('data-toolpad-color-scheme', 'dark');
+      if (estado.modoAtual === 'escuro') {
+        const atributoAtual = document.documentElement.getAttribute('data-toolpad-color-scheme');
+        if (atributoAtual !== 'escuro') {
+          document.documentElement.setAttribute('data-toolpad-color-scheme', 'escuro');
         }
       }
     });
 
-    StateManager.setState({ observerActive: true });
+    GerenciadorEstado.atualizarEstado({ observadorAtivo: true });
     window.typeflowObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-toolpad-color-scheme']
     });
 
     // Mostrar notificações de boas-vindas
-    await Utils.delay(500);
-    ToastSystem.show('🌿 Type Flow carregado com sucesso!', 3000);
+    await Utilitarios.atraso(500);
+    SistemaNotificacoes.mostrar('🌿 Type Flow carregado com sucesso!', 3000);
     
-    await Utils.delay(1000);
-    ToastSystem.show(`🔓 Colagem desbloqueada automaticamente`, 3000);
+    await Utilitarios.atraso(1000);
+    SistemaNotificacoes.mostrar(`🔓 Colagem desbloqueada automaticamente`, 3000);
 
-    await Utils.delay(1000);
-    ToastSystem.show(`🎁 Sistema de doações LivePix ativo!`, 3000);
+    await Utilitarios.atraso(1000);
+    SistemaNotificacoes.mostrar(`📚 Clique em 🎮 para ver o tutorial`, 3000);
 
     // Esconder splash screen
-    await Utils.delay(1000);
-    SplashScreen.hide();
+    await Utilitarios.atraso(1000);
+    TelaSplash.esconder();
     
-    StateManager.setState({ splashShown: true });
+    // Mostrar tutorial automaticamente na primeira vez
+    setTimeout(() => {
+      SistemaTutorial.mostrarTutorial();
+    }, 1500);
 
-    console.log(`🚀 Type Flow carregado com sucesso! (${isMobile ? 'Mobile' : 'PC'})`);
+    GerenciadorEstado.atualizarEstado({ telaSplashMostrada: true });
+
+    console.log(`🚀 Type Flow carregado com sucesso! (${ehMobile ? 'Mobile' : 'PC'})`);
   }
 
-  init();
+  // Iniciar a aplicação
+  iniciar();
 })();
