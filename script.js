@@ -1288,12 +1288,6 @@
     // Esconder splash screen
     await Utils.delay(1000);
     splash.hide();
-    
-    // Mostrar tutorial automaticamente
-    setTimeout(() => {
-    stateManager.update({ splashShown: true });
-    console.log(`✅ Type Flow inicializado (${isMobile ? 'Mobile' : 'Desktop'})`);
-  }
 
   // Iniciar quando o DOM estiver pronto
   if (document.readyState === 'loading') {
