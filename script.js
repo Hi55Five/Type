@@ -15,7 +15,7 @@
       rocket: 'https://img.icons8.com/color/96/000000/rocket.png',
       palette: 'https://img.icons8.com/color/96/000000/palette.png',
       unlock: 'https://img.icons8.com/color/96/000000/unlock.png',
-      gradientBg: 'https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=800&auto=format&fit=crop'
+      info: 'https://img.icons8.com/color/96/000000/info.png'
     },
     darkMode: {
       bg: '#0f0f23',
@@ -118,7 +118,7 @@
     },
 
     getScaled(size) {
-      return size * popupSize;
+      return Math.round(size * popupSize);
     },
 
     async safeExecute(operation, errorMessage) {
@@ -141,7 +141,6 @@
     show() {
       const splash = document.createElement('div');
       splash.id = 'typeflow-splash';
-      splash.className = 'typeflow-splash';
       
       const colors = CONFIG.darkMode;
       splash.innerHTML = `
@@ -156,23 +155,23 @@
         </div>
       `;
 
+      splash.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: ${colors.bg};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000001;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        transition: opacity 0.5s ease;
+      `;
+
       const style = document.createElement('style');
       style.textContent = `
-        .typeflow-splash {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          background: ${colors.bg};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000001;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          transition: opacity 0.5s ease;
-        }
-        
         .splash-content {
           text-align: center;
           padding: 40px;
@@ -182,11 +181,12 @@
         .splash-logo {
           animation: pulse 2s infinite;
           margin-bottom: 20px;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
         }
         
         @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.9; }
         }
         
         .splash-title {
@@ -197,12 +197,14 @@
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+          font-weight: 700;
         }
         
         .splash-subtitle {
           color: ${colors.textLight};
           margin: 0 0 30px 0;
           font-size: 14px;
+          letter-spacing: 0.5px;
         }
         
         .splash-progress {
@@ -212,6 +214,7 @@
           border-radius: 2px;
           margin: 0 auto;
           overflow: hidden;
+          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
         }
         
         .splash-progress-bar {
@@ -220,21 +223,23 @@
           width: 0%;
           transition: width 0.3s ease;
           border-radius: 2px;
+          box-shadow: 0 0 10px ${colors.primary};
         }
         
         .splash-loading {
           color: ${colors.textLight};
           font-size: 12px;
           margin-top: 20px;
+          opacity: 0.8;
         }
         
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-20px); }
+          from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
         }
       `;
       
-      splash.appendChild(style);
+      document.head.appendChild(style);
       document.body.appendChild(splash);
       this.splash = splash;
       this.animateProgress();
@@ -245,13 +250,13 @@
       let width = 0;
       
       const interval = setInterval(() => {
-        width += Math.random() * 15;
+        width += Math.random() * 15 + 5;
         if (width >= 100) {
           width = 100;
           clearInterval(interval);
         }
         progressBar.style.width = width + '%';
-      }, 200);
+      }, 150);
     }
 
     hide() {
@@ -277,35 +282,29 @@
         <span>${message}</span>
       `;
       
-      const style = document.createElement('style');
-      style.textContent = `
-        .typeflow-notification {
-          position: fixed;
-          left: 50%;
-          transform: translateX(-50%) translateY(-20px);
-          background: var(--typeflow-surface);
-          color: var(--typeflow-text);
-          padding: 12px 20px;
-          border-radius: 12px;
-          border: 1px solid var(--typeflow-border);
-          box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-          z-index: 1000002;
-          opacity: 0;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          font-size: 14px;
-          backdrop-filter: blur(10px);
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          max-width: 90vw;
-          white-space: nowrap;
-        }
-        
-        .typeflow-notification.show {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0);
-        }
+      const colors = stateManager.get().currentMode === 'dark' ? CONFIG.darkMode : CONFIG.lightMode;
+      
+      notification.style.cssText = `
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: ${colors.surface};
+        color: ${colors.text};
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: 1px solid ${colors.border};
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        z-index: 1000002;
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 90vw;
+        white-space: nowrap;
       `;
       
       if (position === 'top') {
@@ -314,13 +313,16 @@
         notification.style.bottom = '20px';
       }
       
-      document.body.appendChild(style);
       document.body.appendChild(notification);
       
-      setTimeout(() => notification.classList.add('show'), 10);
+      setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(-50%) translateY(0)';
+      }, 10);
       
       setTimeout(() => {
-        notification.classList.remove('show');
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(-50%) translateY(-20px)';
         setTimeout(() => notification.remove(), 300);
       }, duration);
     }
@@ -332,6 +334,7 @@
       if (message.includes('🚀')) return CONFIG.images.rocket;
       if (message.includes('🎨')) return CONFIG.images.palette;
       if (message.includes('🔓')) return CONFIG.images.unlock;
+      if (message.includes('📚') || message.includes('tutorial')) return CONFIG.images.info;
       return CONFIG.images.check;
     }
   }
@@ -359,6 +362,11 @@
           title: "Modo Escuro/Claro",
           description: "Clique no botão ☀️/🌙 para alternar entre os temas. Sua preferência será salva.",
           icon: CONFIG.images.palette
+        },
+        {
+          title: "Desbloqueio de Colagem",
+          description: "A colagem (Ctrl+V) está automaticamente desbloqueada em todos os campos de texto.",
+          icon: CONFIG.images.unlock
         }
       ];
     }
@@ -366,7 +374,6 @@
     show() {
       const tutorial = document.createElement('div');
       tutorial.id = 'typeflow-tutorial';
-      tutorial.className = 'typeflow-tutorial';
       
       const colors = CONFIG.darkMode;
       tutorial.innerHTML = `
@@ -375,39 +382,43 @@
             <h2><img src="${CONFIG.images.logo}" width="24" height="24"> Tutorial Type Flow</h2>
             <button id="close-tutorial" class="close-btn">×</button>
           </div>
-          ${this.steps.map((step, i) => `
-            <div class="tutorial-step">
-              <div class="step-header">
-                <img src="${step.icon}" width="32" height="32">
-                <h3>${step.title}</h3>
+          <div class="tutorial-steps">
+            ${this.steps.map((step, i) => `
+              <div class="tutorial-step" style="animation-delay: ${i * 0.1}s">
+                <div class="step-header">
+                  <img src="${step.icon}" width="32" height="32">
+                  <h3>${step.title}</h3>
+                </div>
+                <p>${step.description}</p>
               </div>
-              <p>${step.description}</p>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
           <div class="tutorial-footer">
             <button id="start-experience" class="primary-btn">Começar a usar!</button>
           </div>
         </div>
       `;
 
+      tutorial.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 15, 35, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      `;
+
       const style = document.createElement('style');
       style.textContent = `
-        .typeflow-tutorial {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          background: rgba(15, 15, 35, 0.95);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000000;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          backdrop-filter: blur(10px);
-          padding: 20px;
-        }
-        
         .tutorial-content {
           background: ${colors.surface};
           border-radius: 16px;
@@ -417,7 +428,17 @@
           max-height: 80vh;
           overflow-y: auto;
           border: 1px solid ${colors.border};
-          box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+          transform: translateY(-20px);
+          opacity: 0;
+          animation: slideUp 0.4s ease forwards;
+        }
+        
+        @keyframes slideUp {
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
         
         .tutorial-header {
@@ -425,6 +446,8 @@
           justify-content: space-between;
           align-items: center;
           margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid ${colors.border};
         }
         
         .tutorial-header h2 {
@@ -434,6 +457,7 @@
           display: flex;
           align-items: center;
           gap: 10px;
+          font-weight: 600;
         }
         
         .close-btn {
@@ -448,11 +472,16 @@
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: background 0.2s;
+          transition: all 0.2s;
         }
         
         .close-btn:hover {
           background: rgba(255,255,255,0.1);
+          transform: scale(1.1);
+        }
+        
+        .tutorial-steps {
+          margin: 20px 0;
         }
         
         .tutorial-step {
@@ -461,6 +490,15 @@
           padding: 20px;
           margin-bottom: 16px;
           border: 1px solid ${colors.border};
+          animation: fadeInUp 0.5s ease forwards;
+          opacity: 0;
+        }
+        
+        @keyframes fadeInUp {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         
         .step-header {
@@ -474,40 +512,49 @@
           margin: 0;
           color: ${colors.textImportant};
           font-size: 16px;
+          font-weight: 600;
         }
         
         .tutorial-step p {
           margin: 0;
           color: ${colors.textLight};
-          line-height: 1.5;
+          line-height: 1.6;
           font-size: 14px;
         }
         
         .tutorial-footer {
           margin-top: 24px;
           text-align: center;
+          padding-top: 16px;
+          border-top: 1px solid ${colors.border};
         }
         
         .primary-btn {
           background: ${colors.gradient};
           color: white;
           border: none;
-          padding: 12px 24px;
+          padding: 12px 32px;
           border-radius: 10px;
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
-          transition: transform 0.2s;
+          transition: all 0.2s ease;
           width: 100%;
+          letter-spacing: 0.5px;
         }
         
         .primary-btn:hover {
           transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
       `;
       
-      tutorial.appendChild(style);
+      document.head.appendChild(style);
       document.body.appendChild(tutorial);
+
+      setTimeout(() => {
+        tutorial.style.opacity = '1';
+      }, 10);
 
       document.getElementById('close-tutorial').onclick = () => this.close();
       document.getElementById('start-experience').onclick = () => this.close();
@@ -515,6 +562,8 @@
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') this.close();
       });
+
+      stateManager.update({ tutorialShown: true });
     }
 
     close() {
@@ -625,6 +674,7 @@
     }
 
     startDrag(e) {
+      e.preventDefault();
       this.isDragging = true;
       const clientX = e.clientX || e.touches[0].clientX;
       const clientY = e.clientY || e.touches[0].clientY;
@@ -634,7 +684,9 @@
       this.offset.y = clientY - rect.top;
       
       document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'grabbing';
       this.element.style.transition = 'none';
+      this.element.style.boxShadow = '0 15px 35px rgba(0,0,0,0.4)';
       stateManager.update({ isDragging: true });
     }
 
@@ -661,7 +713,9 @@
     stopDrag() {
       this.isDragging = false;
       document.body.style.userSelect = '';
+      document.body.style.cursor = '';
       this.element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      this.element.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
       stateManager.update({ isDragging: false });
     }
   }
@@ -678,6 +732,9 @@
     }
 
     static enableDarkMode() {
+      const state = stateManager.get();
+      if (state.applyingStyles) return;
+      
       stateManager.update({ currentMode: 'dark', applyingStyles: true, observerActive: false });
       localStorage.setItem('toolpad-mode', 'dark');
       document.documentElement.setAttribute('data-toolpad-color-scheme', 'dark');
@@ -697,6 +754,9 @@
     }
 
     static disableDarkMode() {
+      const state = stateManager.get();
+      if (state.applyingStyles) return;
+      
       stateManager.update({ currentMode: 'light', applyingStyles: true, observerActive: false });
       localStorage.removeItem('toolpad-mode');
       document.documentElement.removeAttribute('data-toolpad-color-scheme');
@@ -829,6 +889,8 @@
         field.addEventListener('cut', e => e.stopPropagation(), true);
       });
       
+      NotificationSystem.show('🔓 Colagem desbloqueada em todos os campos', 2000);
+      
       setTimeout(() => {
         this.nuclearUnlock();
       }, 2000);
@@ -892,46 +954,33 @@
     createDisplay() {
       this.fpsElement = document.createElement('div');
       this.fpsElement.id = 'typeflow-fps';
-      this.fpsElement.className = 'typeflow-fps';
-      this.fpsElement.innerHTML = `
-        <div class="fps-content">
-          <div>FPS: <span id="fps-value">0</span></div>
-          <div>MS: <span id="ms-value">0</span>ms</div>
-          <div class="fps-credit">@_zx.lipe_</div>
-        </div>
-      `;
-
-      const style = document.createElement('style');
-      style.textContent = `
-        .typeflow-fps {
-          position: fixed;
-          bottom: 10px;
-          left: 10px;
-          background: rgba(0, 0, 0, 0.7);
-          color: #00ff00;
-          padding: 8px 12px;
-          border-radius: 6px;
-          font-family: 'Courier New', monospace;
-          font-size: 12px;
-          z-index: 999997;
-          backdrop-filter: blur(10px);
-          border: 1px solid #00ff00;
-          transition: all 0.3s ease;
-          opacity: 0.9;
-        }
-        
-        .fps-content {
-          line-height: 1.4;
-        }
-        
-        .fps-credit {
-          font-size: 10px;
-          opacity: 0.8;
-          margin-top: 2px;
-        }
+      
+      const colors = CONFIG.darkMode;
+      this.fpsElement.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #00ff00;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        z-index: 999997;
+        backdrop-filter: blur(10px);
+        border: 1px solid #00ff00;
+        transition: all 0.3s ease;
+        opacity: 0.9;
       `;
       
-      document.head.appendChild(style);
+      this.fpsElement.innerHTML = `
+        <div style="line-height: 1.4;">
+          <div>FPS: <span id="fps-value">0</span></div>
+          <div>MS: <span id="ms-value">0</span>ms</div>
+          <div style="font-size: 10px; opacity: 0.8;">@_zx.lipe_</div>
+        </div>
+      `;
+      
       document.body.appendChild(this.fpsElement);
     }
 
@@ -958,6 +1007,16 @@
         const ms = Math.round(1000 / Math.max(this.fps, 1));
         document.getElementById('fps-value').textContent = this.fps;
         document.getElementById('ms-value').textContent = ms;
+        
+        // Mudar cor baseado no FPS
+        const fpsValue = document.getElementById('fps-value');
+        if (this.fps < 30) {
+          fpsValue.style.color = '#ff4444';
+        } else if (this.fps < 50) {
+          fpsValue.style.color = '#ffaa00';
+        } else {
+          fpsValue.style.color = '#00ff00';
+        }
       }
     }
   }
@@ -978,29 +1037,29 @@
     create() {
       const popup = document.createElement('div');
       popup.id = 'typeflow-popup';
-      popup.className = 'typeflow-popup';
       
       const state = stateManager.get();
       const colors = state.currentMode === 'dark' ? CONFIG.darkMode : CONFIG.lightMode;
+      const scaled = Utils.getScaled;
       
       popup.innerHTML = `
         <div class="popup-header">
           <div class="popup-title">
-            <img src="${CONFIG.images.logo}" width="20" height="20">
+            <img src="${CONFIG.images.logo}" width="${scaled(20)}" height="${scaled(20)}">
             <span>Type Flow</span>
           </div>
           <div class="popup-controls">
             <button class="popup-btn heart-btn" title="Apoiar o projeto">
-              <img src="${CONFIG.images.heart}" width="16" height="16">
+              <img src="${CONFIG.images.heart}" width="${scaled(16)}" height="${scaled(16)}">
             </button>
             <button class="popup-btn ai-btn" title="Criar Prompt para IA">
-              <img src="${CONFIG.images.robot}" width="16" height="16">
+              <img src="${CONFIG.images.robot}" width="${scaled(16)}" height="${scaled(16)}">
             </button>
             <button class="popup-btn theme-btn" title="Alternar tema">
-              <img src="${state.currentMode === 'dark' ? CONFIG.images.sun : CONFIG.images.moon}" width="16" height="16">
+              <img src="${state.currentMode === 'dark' ? CONFIG.images.sun : CONFIG.images.moon}" width="${scaled(16)}" height="${scaled(16)}">
             </button>
             <button class="popup-btn tutorial-btn" title="Abrir tutorial">
-              <img src="${CONFIG.images.game}" width="16" height="16">
+              <img src="${CONFIG.images.info}" width="${scaled(16)}" height="${scaled(16)}">
             </button>
           </div>
         </div>
@@ -1011,8 +1070,12 @@
               <span class="status-text">Status: Ativo</span>
             </div>
             <div class="status-item">
-              <span class="status-icon">📊</span>
-              <span class="status-text">Modo: ${state.currentMode === 'dark' ? 'Escuro' : 'Claro'}</span>
+              <span class="status-icon">📱</span>
+              <span class="status-text">${isMobile ? 'Mobile' : 'Desktop'}</span>
+            </div>
+            <div class="status-item">
+              <span class="status-icon">🎯</span>
+              <span class="status-text">Meta: ${state.wordGoal} palavras</span>
             </div>
           </div>
           <div class="info-capture">
@@ -1021,8 +1084,33 @@
         </div>
       `;
       
+      popup.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: ${scaled(350)}px;
+        background: ${colors.surface};
+        border: 1px solid ${colors.border};
+        border-radius: ${scaled(16)}px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        z-index: 999999;
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0;
+        transform: translateY(-10px);
+      `;
+      
       document.body.appendChild(popup);
       this.popup = popup;
+      
+      // Animar entrada
+      setTimeout(() => {
+        popup.style.opacity = '1';
+        popup.style.transform = 'translateY(0)';
+      }, 300);
+      
       this.applyStyles();
       this.dragSystem = new DragSystem(popup);
     }
@@ -1030,30 +1118,15 @@
     applyStyles() {
       const style = document.createElement('style');
       style.textContent = `
-        .typeflow-popup {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          width: ${Utils.getScaled(350)}px;
-          background: var(--typeflow-surface);
-          border: 1px solid var(--typeflow-border);
-          border-radius: ${Utils.getScaled(16)}px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-          z-index: 999999;
-          overflow: hidden;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          backdrop-filter: blur(10px);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
         .popup-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: ${Utils.getScaled(16)}px;
           background: rgba(0,0,0,0.1);
-          border-bottom: 1px solid var(--typeflow-border);
+          border-bottom: 1px solid var(--typeflow-border, #2d2d5a);
           cursor: move;
+          user-select: none;
         }
         
         .popup-title {
@@ -1061,7 +1134,8 @@
           align-items: center;
           gap: ${Utils.getScaled(8)}px;
           font-weight: 600;
-          color: var(--typeflow-text);
+          color: var(--typeflow-text, #e6e6ff);
+          font-size: ${Utils.getScaled(14)}px;
         }
         
         .popup-controls {
@@ -1092,13 +1166,17 @@
         }
         
         .ai-btn {
-          background: var(--typeflow-gradient);
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .tutorial-btn {
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
         }
         
         .popup-body {
           padding: ${Utils.getScaled(16)}px;
-          color: var(--typeflow-text);
-          font-size: 14px;
+          color: var(--typeflow-text, #e6e6ff);
+          font-size: ${Utils.getScaled(13)}px;
         }
         
         .status-info {
@@ -1112,30 +1190,47 @@
           padding: ${Utils.getScaled(8)}px;
           background: rgba(0,0,0,0.05);
           border-radius: ${Utils.getScaled(8)}px;
-          margin-bottom: ${Utils.getScaled(8)}px;
+          margin-bottom: ${Utils.getScaled(6)}px;
+          transition: background 0.2s;
+        }
+        
+        .status-item:hover {
+          background: rgba(255,255,255,0.05);
+        }
+        
+        .status-icon {
+          font-size: ${Utils.getScaled(14)}px;
+        }
+        
+        .status-text {
+          font-size: ${Utils.getScaled(12)}px;
         }
         
         .secondary-btn {
           background: rgba(255,255,255,0.1);
-          color: var(--typeflow-text);
-          border: 1px solid var(--typeflow-border);
-          padding: ${Utils.getScaled(8)}px ${Utils.getScaled(16)}px;
+          color: var(--typeflow-text, #e6e6ff);
+          border: 1px solid var(--typeflow-border, #2d2d5a);
+          padding: ${Utils.getScaled(10)}px ${Utils.getScaled(16)}px;
           border-radius: ${Utils.getScaled(8)}px;
           cursor: pointer;
           width: 100%;
-          font-size: 14px;
+          font-size: ${Utils.getScaled(13)}px;
           transition: all 0.2s ease;
+          font-weight: 500;
+          letter-spacing: 0.3px;
         }
         
         .secondary-btn:hover {
           background: rgba(255,255,255,0.2);
+          transform: translateY(-1px);
         }
         
         @media (max-width: 768px) {
-          .typeflow-popup {
-            width: calc(100% - 40px);
-            right: 20px;
-            left: 20px;
+          #typeflow-popup {
+            width: calc(100vw - 40px) !important;
+            right: 20px !important;
+            left: 20px !important;
+            top: 20px !important;
           }
         }
       `;
@@ -1144,40 +1239,55 @@
 
     setupEvents() {
       // Tema
-      document.querySelector('.theme-btn').onclick = () => ThemeManager.toggle();
+      const themeBtn = this.popup.querySelector('.theme-btn');
+      if (themeBtn) {
+        themeBtn.onclick = () => ThemeManager.toggle();
+      }
       
       // Tutorial
-      document.querySelector('.tutorial-btn').onclick = () => {
-        const tutorial = new TutorialSystem();
-        tutorial.show();
-      };
+      const tutorialBtn = this.popup.querySelector('.tutorial-btn');
+      if (tutorialBtn) {
+        tutorialBtn.onclick = () => {
+          const tutorial = new TutorialSystem();
+          tutorial.show();
+        };
+      }
       
       // Doação
-      document.querySelector('.heart-btn').onclick = () => {
-        NotificationSystem.show('❤️ Widgets de doação sempre ativos! Obrigado pelo apoio.', 3000);
-      };
+      const heartBtn = this.popup.querySelector('.heart-btn');
+      if (heartBtn) {
+        heartBtn.onclick = () => {
+          NotificationSystem.show('❤️ Widgets de doação sempre ativos! Obrigado pelo apoio.', 3000);
+        };
+      }
       
       // IA
-      document.querySelector('.ai-btn').onclick = () => {
-        Utils.safeExecute(() => {
-          const info = InfoCapture.capture();
-          if (info.tema || info.gênero) {
-            InfoCapture.copyPromptToClipboard();
-          } else {
-            NotificationSystem.show('ℹ️ Nenhuma informação encontrada. Verifique se está na página de redação.', 3000);
-          }
-        }, 'Erro ao criar prompt');
-      };
+      const aiBtn = this.popup.querySelector('.ai-btn');
+      if (aiBtn) {
+        aiBtn.onclick = () => {
+          Utils.safeExecute(() => {
+            const info = InfoCapture.capture();
+            if (info.tema || info.gênero) {
+              InfoCapture.copyPromptToClipboard();
+            } else {
+              NotificationSystem.show('ℹ️ Nenhuma informação encontrada. Verifique se está na página de redação.', 3000);
+            }
+          }, 'Erro ao criar prompt');
+        };
+      }
       
       // Captura de informações
-      document.getElementById('capture-info').onclick = () => {
-        const info = InfoCapture.capture();
-        if (Object.keys(info).length > 0) {
-          NotificationSystem.show('✅ Informações capturadas com sucesso!', 2000);
-        } else {
-          NotificationSystem.show('ℹ️ Nenhuma informação encontrada para capturar.', 3000);
-        }
-      };
+      const captureBtn = this.popup.querySelector('#capture-info');
+      if (captureBtn) {
+        captureBtn.onclick = () => {
+          const info = InfoCapture.capture();
+          if (Object.keys(info).length > 0) {
+            NotificationSystem.show('✅ Informações capturadas com sucesso!', 2000);
+          } else {
+            NotificationSystem.show('ℹ️ Nenhuma informação encontrada para capturar.', 3000);
+          }
+        };
+      }
     }
 
     setupResponsive() {
@@ -1188,10 +1298,12 @@
           this.popup.style.width = 'calc(100vw - 40px)';
           this.popup.style.left = '20px';
           this.popup.style.right = '20px';
+          this.popup.style.top = '20px';
         } else {
           this.popup.style.width = `${Utils.getScaled(350)}px`;
           this.popup.style.right = '20px';
           this.popup.style.left = 'auto';
+          this.popup.style.top = '20px';
         }
       };
       
@@ -1288,6 +1400,16 @@
     // Esconder splash screen
     await Utils.delay(1000);
     splash.hide();
+    
+    // Mostrar tutorial automaticamente após 1.5 segundos
+    setTimeout(() => {
+      const tutorial = new TutorialSystem();
+      tutorial.show();
+    }, 1500);
+
+    stateManager.update({ splashShown: true });
+    console.log(`✅ Type Flow inicializado (${isMobile ? 'Mobile' : 'Desktop'})`);
+  }
 
   // Iniciar quando o DOM estiver pronto
   if (document.readyState === 'loading') {
