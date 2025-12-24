@@ -347,7 +347,7 @@
         },
         {
           title: "Botões Principais",
-          description: "❤️ - Widgets de doação ativos<br>🤖 - Criar prompt para IA<br>☀️/🌙 - Alternar tema<br>🎮 - Ver tutorial novamente",
+          description: "❤️ - Widgets de doação ativos<br>🤖 - Criar prompt para IA<br>☀️/🌙 - Alternar tema<br>ℹ️ - Ver tutorial novamente",
           icon: CONFIG.images.rocket
         },
         {
@@ -1283,7 +1283,7 @@
     NotificationSystem.show('🔓 Colagem desbloqueada automaticamente', 3000);
 
     await Utils.delay(1000);
-    NotificationSystem.show('📚 Clique no botão 🎮 para ver o tutorial', 3000);
+    NotificationSystem.show('📚 Clique no botão ℹ️ para ver o tutorial', 3000);
 
     // Esconder splash screen
     await Utils.delay(1000);
@@ -1291,10 +1291,6 @@
     
     // Mostrar tutorial automaticamente
     setTimeout(() => {
-      const tutorial = new TutorialSystem();
-      tutorial.show();
-    }, 1500);
-
     stateManager.update({ splashShown: true });
     console.log(`✅ Type Flow inicializado (${isMobile ? 'Mobile' : 'Desktop'})`);
   }
