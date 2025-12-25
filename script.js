@@ -1,47 +1,33 @@
 (function() {
-  // ========== CONFIGURAÇÕES GLOBAIS ==========
+  // ========== CONFIGURAÇÕES ==========
   const CONFIG = {
-    typeDelay: 0.001,
-    images: {
-      logo: 'https://img.icons8.com/fluency/96/000000/combo-chart.png',
-      heart: 'https://img.icons8.com/color/96/000000/hearts.png',
-      robot: 'https://img.icons8.com/color/96/000000/robot.png',
-      sun: 'https://img.icons8.com/color/96/000000/sun.png',
-      moon: 'https://img.icons8.com/color/96/000000/crescent-moon.png',
-      game: 'https://img.icons8.com/color/96/000000/controller.png',
-      check: 'https://img.icons8.com/color/96/000000/checkmark.png',
-      error: 'https://img.icons8.com/color/96/000000/error.png',
-      star: 'https://img.icons8.com/color/96/000000/star.png',
-      rocket: 'https://img.icons8.com/color/96/000000/rocket.png',
-      palette: 'https://img.icons8.com/color/96/000000/palette.png',
-      unlock: 'https://img.icons8.com/color/96/000000/unlock.png',
-      info: 'https://img.icons8.com/color/96/000000/info.png'
-    },
-    darkMode: {
-      bg: '#0f0f23',
-      surface: '#1a1a2e',
-      card: '#16213e',
-      text: '#e6e6ff',
-      textLight: '#a0a0cc',
-      textImportant: '#ffffff',
-      primary: '#6366f1',
-      success: '#10b981',
-      warning: '#f59e0b',
-      border: '#2d2d5a',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    },
-    lightMode: {
-      bg: '#ffffff',
-      surface: '#f8fafc',
-      card: '#ffffff',
-      text: '#334155',
-      textLight: '#64748b',
-      textImportant: '#0f172a',
-      primary: '#3b82f6',
-      success: '#10b981',
-      warning: '#f59e0b',
-      border: '#e2e8f0',
-      gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+    colors: {
+      dark: {
+        bg: '#0f0f23',
+        surface: '#1a1a2e',
+        card: '#16213e',
+        text: '#e6e6ff',
+        textLight: '#a0a0cc',
+        textImportant: '#ffffff',
+        primary: '#6366f1',
+        success: '#10b981',
+        warning: '#f59e0b',
+        border: '#2d2d5a',
+        gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      },
+      light: {
+        bg: '#ffffff',
+        surface: '#f8fafc',
+        card: '#ffffff',
+        text: '#334155',
+        textLight: '#64748b',
+        textImportant: '#0f172a',
+        primary: '#3b82f6',
+        success: '#10b981',
+        warning: '#f59e0b',
+        border: '#e2e8f0',
+        gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+      }
     }
   };
 
@@ -50,203 +36,125 @@
 
   // ========== DETECÇÃO DE DISPOSITIVO ==========
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const popupSize = isMobile ? 0.6 : 0.85;
 
-  // ========== GESTÃO DE ESTADO ==========
-  class StateManager {
-    constructor() {
-      this.state = {
-        currentMode: 'dark',
-        capturedInfo: {},
-        applyingStyles: false,
-        observerActive: false,
-        wordGoal: 200,
-        popupVisible: true,
-        typing: false,
-        typingQueue: [],
-        minimized: false,
-        splashShown: false,
-        tutorialShown: false,
-        isDragging: false
-      };
-      this.subscribers = [];
-    }
-
-    update(newState) {
-      this.state = { ...this.state, ...newState };
-      this.notifySubscribers();
-    }
-
-    get() {
-      return { ...this.state };
-    }
-
-    subscribe(callback) {
-      this.subscribers.push(callback);
-    }
-
-    notifySubscribers() {
-      this.subscribers.forEach(callback => callback(this.state));
-    }
-  }
-
-  const stateManager = new StateManager();
+  // ========== ESTADO ==========
+  const state = {
+    currentMode: 'dark',
+    capturedInfo: {},
+    wordGoal: 200,
+    isDragging: false
+  };
 
   // ========== UTILITÁRIOS ==========
   const Utils = {
-    debounce(func, wait) {
-      let timeout;
-      return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func(...args), wait);
-      };
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     },
-
+    
     throttle(func, limit) {
       let inThrottle;
-      return (...args) => {
+      return function(...args) {
         if (!inThrottle) {
-          func(...args);
+          func.apply(this, args);
           inThrottle = true;
           setTimeout(() => inThrottle = false, limit);
         }
       };
-    },
-
-    delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    },
-
-    getScaled(size) {
-      return Math.round(size * popupSize);
-    },
-
-    async safeExecute(operation, errorMessage) {
-      try {
-        return await operation();
-      } catch (error) {
-        console.error(`${errorMessage}:`, error);
-        NotificationSystem.show(`❌ ${errorMessage}`, 4000);
-        return null;
-      }
     }
   };
 
-  // ========== SISTEMA DE SPLASH SCREEN ==========
+  // ========== SPLASH SCREEN ==========
   class SplashScreen {
     constructor() {
-      this.splash = null;
+      this.element = null;
     }
 
     show() {
       const splash = document.createElement('div');
       splash.id = 'typeflow-splash';
       
-      const colors = CONFIG.darkMode;
+      const colors = CONFIG.colors.dark;
       splash.innerHTML = `
-        <div class="splash-content">
-          <img src="${CONFIG.images.logo}" width="60" height="60" class="splash-logo">
-          <h1 class="splash-title">Type Flow</h1>
-          <p class="splash-subtitle">Ferramenta de Redação Avançada</p>
-          <div class="splash-progress">
-            <div class="splash-progress-bar"></div>
+        <div style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: ${colors.bg};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000001;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          transition: opacity 0.5s ease;
+        ">
+          <div style="text-align: center; padding: 40px;">
+            <div style="
+              width: 60px;
+              height: 60px;
+              background: ${colors.gradient};
+              border-radius: 15px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto 20px;
+              font-size: 28px;
+              animation: pulse 2s infinite;
+            ">🌀</div>
+            <h1 style="
+              color: ${colors.textImportant};
+              font-size: 32px;
+              margin: 0 0 10px 0;
+              background: ${colors.gradient};
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              background-clip: text;
+              font-weight: 700;
+            ">Type Flow</h1>
+            <p style="color: ${colors.textLight}; margin: 0 0 30px 0; font-size: 14px;">
+              Ferramenta de Redação Avançada
+            </p>
+            <div style="
+              width: 200px;
+              height: 4px;
+              background: rgba(255,255,255,0.1);
+              border-radius: 2px;
+              margin: 0 auto;
+              overflow: hidden;
+            ">
+              <div id="splash-progress" style="
+                height: 100%;
+                background: ${colors.primary};
+                width: 0%;
+                transition: width 0.3s ease;
+                border-radius: 2px;
+              "></div>
+            </div>
+            <p style="color: ${colors.textLight}; font-size: 12px; margin-top: 20px;">
+              Carregando recursos...
+            </p>
           </div>
-          <p class="splash-loading">Carregando recursos...</p>
         </div>
       `;
-
-      splash.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: ${colors.bg};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000001;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        transition: opacity 0.5s ease;
-      `;
-
+      
+      // Adicionar animação pulse
       const style = document.createElement('style');
       style.textContent = `
-        .splash-content {
-          text-align: center;
-          padding: 40px;
-          animation: fadeIn 0.5s ease;
-        }
-        
-        .splash-logo {
-          animation: pulse 2s infinite;
-          margin-bottom: 20px;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-        }
-        
         @keyframes pulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.05); opacity: 0.9; }
         }
-        
-        .splash-title {
-          color: ${colors.textImportant};
-          font-size: 32px;
-          margin: 0 0 10px 0;
-          background: ${colors.gradient};
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          font-weight: 700;
-        }
-        
-        .splash-subtitle {
-          color: ${colors.textLight};
-          margin: 0 0 30px 0;
-          font-size: 14px;
-          letter-spacing: 0.5px;
-        }
-        
-        .splash-progress {
-          width: 200px;
-          height: 4px;
-          background: rgba(255,255,255,0.1);
-          border-radius: 2px;
-          margin: 0 auto;
-          overflow: hidden;
-          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
-        }
-        
-        .splash-progress-bar {
-          height: 100%;
-          background: ${colors.primary};
-          width: 0%;
-          transition: width 0.3s ease;
-          border-radius: 2px;
-          box-shadow: 0 0 10px ${colors.primary};
-        }
-        
-        .splash-loading {
-          color: ${colors.textLight};
-          font-size: 12px;
-          margin-top: 20px;
-          opacity: 0.8;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
       `;
-      
       document.head.appendChild(style);
+      
       document.body.appendChild(splash);
-      this.splash = splash;
+      this.element = splash;
       this.animateProgress();
     }
 
     animateProgress() {
-      const progressBar = this.splash.querySelector('.splash-progress-bar');
+      const progress = document.getElementById('splash-progress');
       let width = 0;
       
       const interval = setInterval(() => {
@@ -255,37 +163,38 @@
           width = 100;
           clearInterval(interval);
         }
-        progressBar.style.width = width + '%';
+        progress.style.width = width + '%';
       }, 150);
     }
 
     hide() {
-      if (this.splash) {
-        this.splash.style.opacity = '0';
+      if (this.element) {
+        this.element.style.opacity = '0';
         setTimeout(() => {
-          if (this.splash && this.splash.parentNode) {
-            this.splash.parentNode.removeChild(this.splash);
+          if (this.element && this.element.parentNode) {
+            this.element.parentNode.removeChild(this.element);
           }
         }, 500);
       }
     }
   }
 
-  // ========== SISTEMA DE NOTIFICAÇÕES ==========
+  // ========== NOTIFICAÇÕES ==========
   class NotificationSystem {
-    static show(message, duration = 3000, position = 'top') {
+    static show(message, duration = 3000) {
+      const colors = state.currentMode === 'dark' ? CONFIG.colors.dark : CONFIG.colors.light;
       const notification = document.createElement('div');
-      notification.className = 'typeflow-notification';
+      
+      const icon = this.getIcon(message);
       
       notification.innerHTML = `
-        <img src="${this.getIcon(message)}" width="20" height="20">
+        <span style="font-size: 18px;">${icon}</span>
         <span>${message}</span>
       `;
       
-      const colors = stateManager.get().currentMode === 'dark' ? CONFIG.darkMode : CONFIG.lightMode;
-      
       notification.style.cssText = `
         position: fixed;
+        top: 20px;
         left: 50%;
         transform: translateX(-50%) translateY(-20px);
         background: ${colors.surface};
@@ -307,66 +216,62 @@
         white-space: nowrap;
       `;
       
-      if (position === 'top') {
-        notification.style.top = '20px';
-      } else {
-        notification.style.bottom = '20px';
-      }
-      
       document.body.appendChild(notification);
       
+      // Animação de entrada
       setTimeout(() => {
         notification.style.opacity = '1';
         notification.style.transform = 'translateX(-50%) translateY(0)';
       }, 10);
       
+      // Remover após duração
       setTimeout(() => {
         notification.style.opacity = '0';
         notification.style.transform = 'translateX(-50%) translateY(-20px)';
-        setTimeout(() => notification.remove(), 300);
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
       }, duration);
     }
 
     static getIcon(message) {
-      if (message.includes('✅') || message.includes('sucesso')) return CONFIG.images.check;
-      if (message.includes('❌') || message.includes('erro')) return CONFIG.images.error;
-      if (message.includes('⭐') || message.includes('bem-vindo')) return CONFIG.images.star;
-      if (message.includes('🚀')) return CONFIG.images.rocket;
-      if (message.includes('🎨')) return CONFIG.images.palette;
-      if (message.includes('🔓')) return CONFIG.images.unlock;
-      if (message.includes('📚') || message.includes('tutorial')) return CONFIG.images.info;
-      return CONFIG.images.check;
+      if (message.includes('✅')) return '✅';
+      if (message.includes('❌')) return '❌';
+      if (message.includes('🚀')) return '🚀';
+      if (message.includes('🔓')) return '🔓';
+      if (message.includes('📚')) return '📚';
+      if (message.includes('❤️')) return '❤️';
+      if (message.includes('🌙')) return '🌙';
+      if (message.includes('☀️')) return '☀️';
+      return 'ℹ️';
     }
   }
 
-  // ========== SISTEMA DE TUTORIAL ==========
+  // ========== TUTORIAL ==========
   class TutorialSystem {
     constructor() {
       this.steps = [
         {
           title: "Bem-vindo ao Type Flow!",
           description: "Ferramenta de redação avançada com diversas funcionalidades para facilitar sua escrita.",
-          icon: CONFIG.images.logo
+          icon: "🌀"
         },
         {
           title: "Botões Principais",
           description: "❤️ - Widgets de doação ativos<br>🤖 - Criar prompt para IA<br>☀️/🌙 - Alternar tema<br>ℹ️ - Ver tutorial novamente",
-          icon: CONFIG.images.rocket
+          icon: "🚀"
         },
         {
           title: "Como usar o Prompt para IA",
           description: "1. Acesse uma redação<br>2. Clique no botão 🤖<br>3. O prompt será copiado automaticamente<br>4. Cole em sua IA favorita",
-          icon: CONFIG.images.robot
+          icon: "🤖"
         },
         {
           title: "Modo Escuro/Claro",
           description: "Clique no botão ☀️/🌙 para alternar entre os temas. Sua preferência será salva.",
-          icon: CONFIG.images.palette
-        },
-        {
-          title: "Desbloqueio de Colagem",
-          description: "A colagem (Ctrl+V) está automaticamente desbloqueada em todos os campos de texto.",
-          icon: CONFIG.images.unlock
+          icon: "🎨"
         }
       ];
     }
@@ -375,30 +280,89 @@
       const tutorial = document.createElement('div');
       tutorial.id = 'typeflow-tutorial';
       
-      const colors = CONFIG.darkMode;
+      const colors = CONFIG.colors.dark;
       tutorial.innerHTML = `
-        <div class="tutorial-content">
-          <div class="tutorial-header">
-            <h2><img src="${CONFIG.images.logo}" width="24" height="24"> Tutorial Type Flow</h2>
-            <button id="close-tutorial" class="close-btn">×</button>
+        <div style="
+          background: ${colors.surface};
+          border-radius: 16px;
+          padding: 30px;
+          max-width: 500px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          border: 1px solid ${colors.border};
+          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+          transform: translateY(-20px);
+          opacity: 0;
+          animation: slideUp 0.4s ease forwards;
+        ">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="margin: 0; color: ${colors.textImportant}; font-size: 20px; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 24px;">🌀</span> Tutorial Type Flow
+            </h2>
+            <button id="close-tutorial" style="
+              background: none;
+              border: none;
+              color: ${colors.text};
+              font-size: 28px;
+              cursor: pointer;
+              width: 36px;
+              height: 36px;
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.2s;
+            ">×</button>
           </div>
-          <div class="tutorial-steps">
+          
+          <div style="margin: 20px 0;">
             ${this.steps.map((step, i) => `
-              <div class="tutorial-step" style="animation-delay: ${i * 0.1}s">
-                <div class="step-header">
-                  <img src="${step.icon}" width="32" height="32">
-                  <h3>${step.title}</h3>
+              <div style="
+                background: ${colors.card};
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 16px;
+                border: 1px solid ${colors.border};
+                animation: fadeInUp 0.5s ease forwards;
+                opacity: 0;
+                animation-delay: ${i * 0.1}s;
+              ">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                  <div style="
+                    width: 40px;
+                    height: 40px;
+                    background: ${colors.gradient};
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                  ">${step.icon}</div>
+                  <h3 style="margin: 0; color: ${colors.textImportant}; font-size: 16px;">${step.title}</h3>
                 </div>
-                <p>${step.description}</p>
+                <p style="margin: 0; color: ${colors.textLight}; line-height: 1.6; font-size: 14px;">${step.description}</p>
               </div>
             `).join('')}
           </div>
-          <div class="tutorial-footer">
-            <button id="start-experience" class="primary-btn">Começar a usar!</button>
+          
+          <div style="margin-top: 24px; text-align: center;">
+            <button id="start-experience" style="
+              background: ${colors.gradient};
+              color: white;
+              border: none;
+              padding: 12px 32px;
+              border-radius: 10px;
+              font-size: 14px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              width: 100%;
+            ">Começar a usar!</button>
           </div>
         </div>
       `;
-
+      
       tutorial.style.cssText = `
         position: fixed;
         top: 0;
@@ -416,142 +380,27 @@
         opacity: 0;
         transition: opacity 0.3s ease;
       `;
-
+      
+      // Adicionar animações
       const style = document.createElement('style');
       style.textContent = `
-        .tutorial-content {
-          background: ${colors.surface};
-          border-radius: 16px;
-          padding: 30px;
-          max-width: 500px;
-          width: 100%;
-          max-height: 80vh;
-          overflow-y: auto;
-          border: 1px solid ${colors.border};
-          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-          transform: translateY(-20px);
-          opacity: 0;
-          animation: slideUp 0.4s ease forwards;
-        }
-        
         @keyframes slideUp {
           to {
             transform: translateY(0);
             opacity: 1;
           }
         }
-        
-        .tutorial-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid ${colors.border};
-        }
-        
-        .tutorial-header h2 {
-          margin: 0;
-          color: ${colors.textImportant};
-          font-size: 20px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-weight: 600;
-        }
-        
-        .close-btn {
-          background: none;
-          border: none;
-          color: ${colors.text};
-          font-size: 28px;
-          cursor: pointer;
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-        
-        .close-btn:hover {
-          background: rgba(255,255,255,0.1);
-          transform: scale(1.1);
-        }
-        
-        .tutorial-steps {
-          margin: 20px 0;
-        }
-        
-        .tutorial-step {
-          background: ${colors.card};
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 16px;
-          border: 1px solid ${colors.border};
-          animation: fadeInUp 0.5s ease forwards;
-          opacity: 0;
-        }
-        
         @keyframes fadeInUp {
           to {
             opacity: 1;
             transform: translateY(0);
           }
         }
-        
-        .step-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 12px;
-        }
-        
-        .step-header h3 {
-          margin: 0;
-          color: ${colors.textImportant};
-          font-size: 16px;
-          font-weight: 600;
-        }
-        
-        .tutorial-step p {
-          margin: 0;
-          color: ${colors.textLight};
-          line-height: 1.6;
-          font-size: 14px;
-        }
-        
-        .tutorial-footer {
-          margin-top: 24px;
-          text-align: center;
-          padding-top: 16px;
-          border-top: 1px solid ${colors.border};
-        }
-        
-        .primary-btn {
-          background: ${colors.gradient};
-          color: white;
-          border: none;
-          padding: 12px 32px;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          width: 100%;
-          letter-spacing: 0.5px;
-        }
-        
-        .primary-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
       `;
-      
       document.head.appendChild(style);
+      
       document.body.appendChild(tutorial);
-
+      
       setTimeout(() => {
         tutorial.style.opacity = '1';
       }, 10);
@@ -562,8 +411,6 @@
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') this.close();
       });
-
-      stateManager.update({ tutorialShown: true });
     }
 
     close() {
@@ -603,7 +450,7 @@
     }
 
     createWidgets() {
-      // Widget de doação (sempre visível)
+      // Widget de doação
       const donationContainer = this.createWidget(this.widgets.donation);
       donationContainer.id = 'livepix-donation';
       document.body.appendChild(donationContainer);
@@ -687,7 +534,7 @@
       document.body.style.cursor = 'grabbing';
       this.element.style.transition = 'none';
       this.element.style.boxShadow = '0 15px 35px rgba(0,0,0,0.4)';
-      stateManager.update({ isDragging: true });
+      state.isDragging = true;
     }
 
     drag(e) {
@@ -716,14 +563,13 @@
       document.body.style.cursor = '';
       this.element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
       this.element.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
-      stateManager.update({ isDragging: false });
+      state.isDragging = false;
     }
   }
 
   // ========== GESTÃO DE TEMA ==========
   class ThemeManager {
     static toggle() {
-      const state = stateManager.get();
       if (state.currentMode === 'dark') {
         this.disableDarkMode();
       } else {
@@ -732,32 +578,22 @@
     }
 
     static enableDarkMode() {
-      const state = stateManager.get();
-      if (state.applyingStyles) return;
-      
-      stateManager.update({ currentMode: 'dark', applyingStyles: true, observerActive: false });
+      state.currentMode = 'dark';
       localStorage.setItem('toolpad-mode', 'dark');
       document.documentElement.setAttribute('data-toolpad-color-scheme', 'dark');
       this.applyDarkModeStyles();
       
       const themeBtn = document.querySelector('.theme-btn');
       if (themeBtn) {
-        themeBtn.innerHTML = `<img src="${CONFIG.images.sun}" width="16" height="16">`;
+        themeBtn.innerHTML = '☀️';
         themeBtn.title = 'Alternar para Modo Claro';
       }
-      
-      setTimeout(() => {
-        stateManager.update({ observerActive: true, applyingStyles: false });
-      }, 1000);
       
       NotificationSystem.show('🌙 Modo escuro ativado', 2000);
     }
 
     static disableDarkMode() {
-      const state = stateManager.get();
-      if (state.applyingStyles) return;
-      
-      stateManager.update({ currentMode: 'light', applyingStyles: true, observerActive: false });
+      state.currentMode = 'light';
       localStorage.removeItem('toolpad-mode');
       document.documentElement.removeAttribute('data-toolpad-color-scheme');
       
@@ -766,13 +602,9 @@
       
       const themeBtn = document.querySelector('.theme-btn');
       if (themeBtn) {
-        themeBtn.innerHTML = `<img src="${CONFIG.images.moon}" width="16" height="16">`;
+        themeBtn.innerHTML = '🌙';
         themeBtn.title = 'Alternar para Modo Escuro';
       }
-      
-      setTimeout(() => {
-        stateManager.update({ observerActive: true, applyingStyles: false });
-      }, 1000);
       
       NotificationSystem.show('☀️ Modo claro ativado', 2000);
     }
@@ -785,21 +617,21 @@
       darkStyle.setAttribute('data-dark-mode', 'universal');
       darkStyle.textContent = `
         body {
-            background-color: ${CONFIG.darkMode.bg} !important;
-            color: ${CONFIG.darkMode.text} !important;
+            background-color: ${CONFIG.colors.dark.bg} !important;
+            color: ${CONFIG.colors.dark.text} !important;
         }
         [class*="MuiBox-root"], [class*="MuiPaper-root"], [class*="MuiCard-root"],
         [class*="container"], [class*="Container"], .main-content-container {
-            background-color: ${CONFIG.darkMode.surface} !important;
-            color: ${CONFIG.darkMode.text} !important;
+            background-color: ${CONFIG.colors.dark.surface} !important;
+            color: ${CONFIG.colors.dark.text} !important;
         }
         [class*="MuiTypography"], p, span, div, h1, h2, h3, h4, h5, h6 {
-            color: ${CONFIG.darkMode.text} !important;
+            color: ${CONFIG.colors.dark.text} !important;
         }
         [class*="MuiInput"], [class*="MuiTextField"], input, textarea, select {
-            background-color: ${CONFIG.darkMode.card} !important;
-            color: ${CONFIG.darkMode.text} !important;
-            border-color: ${CONFIG.darkMode.border} !important;
+            background-color: ${CONFIG.colors.dark.card} !important;
+            color: ${CONFIG.colors.dark.text} !important;
+            border-color: ${CONFIG.colors.dark.border} !important;
         }
       `;
       document.head.appendChild(darkStyle);
@@ -824,18 +656,17 @@
           if (label.includes('palavras') || label.includes('número')) {
             const match = value.match(/(\d+)/);
             if (match) {
-              stateManager.update({ wordGoal: parseInt(match[1]) });
+              state.wordGoal = parseInt(match[1]);
             }
           }
         }
       });
       
-      stateManager.update({ capturedInfo: info });
+      state.capturedInfo = info;
       return info;
     }
 
     static generateAIPrompt() {
-      const state = stateManager.get();
       const genre = state.capturedInfo.gênero || 'desconhecido';
       const theme = state.capturedInfo.tema || 'desconhecido';
       const words = state.capturedInfo['número de palavras'] || state.wordGoal;
@@ -937,13 +768,13 @@
     }
   }
 
-  // ========== SISTEMA DE FPS ==========
+  // ========== MONITOR DE FPS ==========
   class FPSMonitor {
     constructor() {
       this.fps = 0;
       this.frameCount = 0;
       this.lastTime = performance.now();
-      this.fpsElement = null;
+      this.element = null;
     }
 
     init() {
@@ -952,11 +783,10 @@
     }
 
     createDisplay() {
-      this.fpsElement = document.createElement('div');
-      this.fpsElement.id = 'typeflow-fps';
+      this.element = document.createElement('div');
+      this.element.id = 'typeflow-fps';
       
-      const colors = CONFIG.darkMode;
-      this.fpsElement.style.cssText = `
+      this.element.style.cssText = `
         position: fixed;
         bottom: 10px;
         left: 10px;
@@ -969,11 +799,10 @@
         z-index: 999997;
         backdrop-filter: blur(10px);
         border: 1px solid #00ff00;
-        transition: all 0.3s ease;
         opacity: 0.9;
       `;
       
-      this.fpsElement.innerHTML = `
+      this.element.innerHTML = `
         <div style="line-height: 1.4;">
           <div>FPS: <span id="fps-value">0</span></div>
           <div>MS: <span id="ms-value">0</span>ms</div>
@@ -981,7 +810,7 @@
         </div>
       `;
       
-      document.body.appendChild(this.fpsElement);
+      document.body.appendChild(this.element);
     }
 
     startTracking() {
@@ -1003,25 +832,15 @@
     }
 
     updateDisplay() {
-      if (this.fpsElement) {
+      if (this.element) {
         const ms = Math.round(1000 / Math.max(this.fps, 1));
         document.getElementById('fps-value').textContent = this.fps;
         document.getElementById('ms-value').textContent = ms;
-        
-        // Mudar cor baseado no FPS
-        const fpsValue = document.getElementById('fps-value');
-        if (this.fps < 30) {
-          fpsValue.style.color = '#ff4444';
-        } else if (this.fps < 50) {
-          fpsValue.style.color = '#ffaa00';
-        } else {
-          fpsValue.style.color = '#00ff00';
-        }
       }
     }
   }
 
-  // ========== SISTEMA DE POPUP ==========
+  // ========== POPUP PRINCIPAL ==========
   class PopupSystem {
     constructor() {
       this.popup = null;
@@ -1038,49 +857,107 @@
       const popup = document.createElement('div');
       popup.id = 'typeflow-popup';
       
-      const state = stateManager.get();
-      const colors = state.currentMode === 'dark' ? CONFIG.darkMode : CONFIG.lightMode;
-      const scaled = Utils.getScaled;
+      const colors = state.currentMode === 'dark' ? CONFIG.colors.dark : CONFIG.colors.light;
       
       popup.innerHTML = `
-        <div class="popup-header">
-          <div class="popup-title">
-            <img src="${CONFIG.images.logo}" width="${scaled(20)}" height="${scaled(20)}">
+        <div class="popup-header" style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px;
+          background: rgba(0,0,0,0.1);
+          border-bottom: 1px solid ${colors.border};
+          cursor: move;
+        ">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: ${colors.text};">
+            <span style="font-size: 20px;">🌀</span>
             <span>Type Flow</span>
           </div>
-          <div class="popup-controls">
-            <button class="popup-btn heart-btn" title="Apoiar o projeto">
-              <img src="${CONFIG.images.heart}" width="${scaled(16)}" height="${scaled(16)}">
-            </button>
-            <button class="popup-btn ai-btn" title="Criar Prompt para IA">
-              <img src="${CONFIG.images.robot}" width="${scaled(16)}" height="${scaled(16)}">
-            </button>
-            <button class="popup-btn theme-btn" title="Alternar tema">
-              <img src="${state.currentMode === 'dark' ? CONFIG.images.sun : CONFIG.images.moon}" width="${scaled(16)}" height="${scaled(16)}">
-            </button>
-            <button class="popup-btn tutorial-btn" title="Abrir tutorial">
-              <img src="${CONFIG.images.info}" width="${scaled(16)}" height="${scaled(16)}">
-            </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="popup-btn heart-btn" title="Apoiar o projeto" style="
+              width: 36px;
+              height: 36px;
+              border-radius: 10px;
+              border: none;
+              background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+              color: white;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 18px;
+            ">❤️</button>
+            <button class="popup-btn ai-btn" title="Criar Prompt para IA" style="
+              width: 36px;
+              height: 36px;
+              border-radius: 10px;
+              border: none;
+              background: ${colors.gradient};
+              color: white;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 18px;
+            ">🤖</button>
+            <button class="popup-btn theme-btn" title="Alternar tema" style="
+              width: 36px;
+              height: 36px;
+              border-radius: 10px;
+              border: none;
+              background: rgba(255,255,255,0.1);
+              color: ${colors.text};
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 18px;
+            ">${state.currentMode === 'dark' ? '☀️' : '🌙'}</button>
+            <button class="popup-btn tutorial-btn" title="Abrir tutorial" style="
+              width: 36px;
+              height: 36px;
+              border-radius: 10px;
+              border: none;
+              background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+              color: white;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 18px;
+            ">ℹ️</button>
           </div>
         </div>
-        <div class="popup-body">
-          <div class="status-info">
-            <div class="status-item">
-              <span class="status-icon">🟢</span>
-              <span class="status-text">Status: Ativo</span>
+        <div class="popup-body" style="
+          padding: 16px;
+          color: ${colors.text};
+          font-size: 14px;
+        ">
+          <div style="margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 8px; margin-bottom: 8px;">
+              <span>🟢</span>
+              <span>Status: Ativo</span>
             </div>
-            <div class="status-item">
-              <span class="status-icon">📱</span>
-              <span class="status-text">${isMobile ? 'Mobile' : 'Desktop'}</span>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 8px; margin-bottom: 8px;">
+              <span>📱</span>
+              <span>${isMobile ? 'Mobile' : 'Desktop'}</span>
             </div>
-            <div class="status-item">
-              <span class="status-icon">🎯</span>
-              <span class="status-text">Meta: ${state.wordGoal} palavras</span>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 8px;">
+              <span>🎯</span>
+              <span>Meta: ${state.wordGoal} palavras</span>
             </div>
           </div>
-          <div class="info-capture">
-            <button id="capture-info" class="secondary-btn">Capturar Informações</button>
-          </div>
+          <button id="capture-info" style="
+            background: rgba(255,255,255,0.1);
+            color: ${colors.text};
+            border: 1px solid ${colors.border};
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 13px;
+            transition: all 0.2s ease;
+          ">Capturar Informações</button>
         </div>
       `;
       
@@ -1088,10 +965,10 @@
         position: fixed;
         top: 20px;
         right: 20px;
-        width: ${scaled(350)}px;
+        width: ${isMobile ? 'calc(100vw - 40px)' : '300px'};
         background: ${colors.surface};
         border: 1px solid ${colors.border};
-        border-radius: ${scaled(16)}px;
+        border-radius: 16px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         z-index: 999999;
         overflow: hidden;
@@ -1111,130 +988,7 @@
         popup.style.transform = 'translateY(0)';
       }, 300);
       
-      this.applyStyles();
       this.dragSystem = new DragSystem(popup);
-    }
-
-    applyStyles() {
-      const style = document.createElement('style');
-      style.textContent = `
-        .popup-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: ${Utils.getScaled(16)}px;
-          background: rgba(0,0,0,0.1);
-          border-bottom: 1px solid var(--typeflow-border, #2d2d5a);
-          cursor: move;
-          user-select: none;
-        }
-        
-        .popup-title {
-          display: flex;
-          align-items: center;
-          gap: ${Utils.getScaled(8)}px;
-          font-weight: 600;
-          color: var(--typeflow-text, #e6e6ff);
-          font-size: ${Utils.getScaled(14)}px;
-        }
-        
-        .popup-controls {
-          display: flex;
-          gap: ${Utils.getScaled(8)}px;
-        }
-        
-        .popup-btn {
-          width: ${Utils.getScaled(36)}px;
-          height: ${Utils.getScaled(36)}px;
-          border-radius: ${Utils.getScaled(10)}px;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s ease;
-          background: rgba(255,255,255,0.1);
-        }
-        
-        .popup-btn:hover {
-          transform: scale(1.1);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        
-        .heart-btn {
-          background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-        }
-        
-        .ai-btn {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .tutorial-btn {
-          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        }
-        
-        .popup-body {
-          padding: ${Utils.getScaled(16)}px;
-          color: var(--typeflow-text, #e6e6ff);
-          font-size: ${Utils.getScaled(13)}px;
-        }
-        
-        .status-info {
-          margin-bottom: ${Utils.getScaled(12)}px;
-        }
-        
-        .status-item {
-          display: flex;
-          align-items: center;
-          gap: ${Utils.getScaled(8)}px;
-          padding: ${Utils.getScaled(8)}px;
-          background: rgba(0,0,0,0.05);
-          border-radius: ${Utils.getScaled(8)}px;
-          margin-bottom: ${Utils.getScaled(6)}px;
-          transition: background 0.2s;
-        }
-        
-        .status-item:hover {
-          background: rgba(255,255,255,0.05);
-        }
-        
-        .status-icon {
-          font-size: ${Utils.getScaled(14)}px;
-        }
-        
-        .status-text {
-          font-size: ${Utils.getScaled(12)}px;
-        }
-        
-        .secondary-btn {
-          background: rgba(255,255,255,0.1);
-          color: var(--typeflow-text, #e6e6ff);
-          border: 1px solid var(--typeflow-border, #2d2d5a);
-          padding: ${Utils.getScaled(10)}px ${Utils.getScaled(16)}px;
-          border-radius: ${Utils.getScaled(8)}px;
-          cursor: pointer;
-          width: 100%;
-          font-size: ${Utils.getScaled(13)}px;
-          transition: all 0.2s ease;
-          font-weight: 500;
-          letter-spacing: 0.3px;
-        }
-        
-        .secondary-btn:hover {
-          background: rgba(255,255,255,0.2);
-          transform: translateY(-1px);
-        }
-        
-        @media (max-width: 768px) {
-          #typeflow-popup {
-            width: calc(100vw - 40px) !important;
-            right: 20px !important;
-            left: 20px !important;
-            top: 20px !important;
-          }
-        }
-      `;
-      document.head.appendChild(style);
     }
 
     setupEvents() {
@@ -1248,8 +1002,7 @@
       const tutorialBtn = this.popup.querySelector('.tutorial-btn');
       if (tutorialBtn) {
         tutorialBtn.onclick = () => {
-          const tutorial = new TutorialSystem();
-          tutorial.show();
+          new TutorialSystem().show();
         };
       }
       
@@ -1265,14 +1018,12 @@
       const aiBtn = this.popup.querySelector('.ai-btn');
       if (aiBtn) {
         aiBtn.onclick = () => {
-          Utils.safeExecute(() => {
-            const info = InfoCapture.capture();
-            if (info.tema || info.gênero) {
-              InfoCapture.copyPromptToClipboard();
-            } else {
-              NotificationSystem.show('ℹ️ Nenhuma informação encontrada. Verifique se está na página de redação.', 3000);
-            }
-          }, 'Erro ao criar prompt');
+          const info = InfoCapture.capture();
+          if (info.tema || info.gênero) {
+            InfoCapture.copyPromptToClipboard();
+          } else {
+            NotificationSystem.show('ℹ️ Nenhuma informação encontrada. Verifique se está na página de redação.', 3000);
+          }
         };
       }
       
@@ -1291,57 +1042,40 @@
     }
 
     setupResponsive() {
-      const mediaQuery = window.matchMedia('(max-width: 768px)');
-      
-      const handleMobileChange = (e) => {
-        if (e.matches) {
-          this.popup.style.width = 'calc(100vw - 40px)';
-          this.popup.style.left = '20px';
-          this.popup.style.right = '20px';
-          this.popup.style.top = '20px';
-        } else {
-          this.popup.style.width = `${Utils.getScaled(350)}px`;
-          this.popup.style.right = '20px';
-          this.popup.style.left = 'auto';
-          this.popup.style.top = '20px';
+      window.addEventListener('resize', () => {
+        if (this.popup) {
+          if (window.innerWidth <= 768) {
+            this.popup.style.width = 'calc(100vw - 40px)';
+            this.popup.style.right = '20px';
+            this.popup.style.left = '20px';
+          } else {
+            this.popup.style.width = '300px';
+            this.popup.style.right = '20px';
+            this.popup.style.left = 'auto';
+          }
         }
-      };
-      
-      mediaQuery.addListener(handleMobileChange);
-      handleMobileChange(mediaQuery);
+      });
     }
   }
 
-  // ========== SISTEMA DE LIMPEZA ==========
-  class CleanupSystem {
-    static init() {
-      this.setupCleanup();
-    }
-
-    static setupCleanup() {
-      const cleanup = () => {
-        if (window.typeflowObserver) {
-          window.typeflowObserver.disconnect();
-        }
-        const elements = [
-          'typeflow-fps',
-          'livepix-donation',
-          'livepix-qr',
-          'livepix-donors',
-          'typeflow-popup',
-          'typeflow-tutorial',
-          'typeflow-splash'
-        ];
-        
-        elements.forEach(id => {
-          const element = document.getElementById(id);
-          if (element) element.remove();
-        });
-      };
+  // ========== LIMPEZA ==========
+  function setupCleanup() {
+    window.addEventListener('beforeunload', () => {
+      const elements = [
+        'typeflow-fps',
+        'livepix-donation',
+        'livepix-qr',
+        'livepix-donors',
+        'typeflow-popup',
+        'typeflow-tutorial',
+        'typeflow-splash'
+      ];
       
-      window.addEventListener('beforeunload', cleanup);
-      return cleanup;
-    }
+      elements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.remove();
+      });
+    });
   }
 
   // ========== INICIALIZAÇÃO ==========
@@ -1350,7 +1084,7 @@
     const splash = new SplashScreen();
     splash.show();
     
-    // Inicializar componentes principais
+    // Inicializar componentes
     await Utils.delay(1000);
     
     const popup = new PopupSystem();
@@ -1366,52 +1100,30 @@
     const fpsMonitor = new FPSMonitor();
     fpsMonitor.init();
     
-    CleanupSystem.init();
+    setupCleanup();
     
-    // Configurar observer para tema
-    window.typeflowObserver = new MutationObserver(() => {
-      const state = stateManager.get();
-      if (!state.observerActive) return;
-      
-      if (state.currentMode === 'dark') {
-        const currentAttr = document.documentElement.getAttribute('data-toolpad-color-scheme');
-        if (currentAttr !== 'dark') {
-          document.documentElement.setAttribute('data-toolpad-color-scheme', 'dark');
-        }
-      }
-    });
-
-    stateManager.update({ observerActive: true });
-    window.typeflowObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-toolpad-color-scheme']
-    });
-
-    // Mostrar notificações de boas-vindas
+    // Notificações iniciais
     await Utils.delay(500);
     NotificationSystem.show('🚀 Type Flow carregado com sucesso!', 3000);
     
     await Utils.delay(1000);
     NotificationSystem.show('🔓 Colagem desbloqueada automaticamente', 3000);
-
+    
     await Utils.delay(1000);
     NotificationSystem.show('📚 Clique no botão ℹ️ para ver o tutorial', 3000);
-
-    // Esconder splash screen
+    
+    // Esconder splash e mostrar tutorial
     await Utils.delay(1000);
     splash.hide();
     
-    // Mostrar tutorial automaticamente após 1.5 segundos
     setTimeout(() => {
-      const tutorial = new TutorialSystem();
-      tutorial.show();
+      new TutorialSystem().show();
     }, 1500);
-
-    stateManager.update({ splashShown: true });
+    
     console.log(`✅ Type Flow inicializado (${isMobile ? 'Mobile' : 'Desktop'})`);
   }
 
-  // Iniciar quando o DOM estiver pronto
+  // Iniciar
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
